@@ -9,6 +9,7 @@ export class AppController {
   index(): string {
     return this.appService.getHello()
   }
+
   @Post('/test')
   hello(): string {
     return this.appService.getHello()
