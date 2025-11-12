@@ -1,9 +1,9 @@
 {
   "name": "05-nest-clean",
   "version": "0.0.1",
-  "type": "module",
   "description": "",
   "author": "",
+  "type": "commonjs",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
