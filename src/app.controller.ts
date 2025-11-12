@@ -16,6 +16,6 @@ export class AppController {
 
   @Post('/test')
   async hello() {
-    return await this.prisma.client.user.findMany()
+    return await this.prisma.user.findMany()
   }
 }
