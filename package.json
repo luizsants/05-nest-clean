@@ -1,0 +1,46 @@
+{
+  "name": "05-nest-clean",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "type": "commonjs",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "build": "nest build",
+    "generate": "nest generate"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.9",
+    "@nestjs/core": "^11.1.9",
+    "@nestjs/platform-express": "^11.1.9",
+    "@prisma/client": "^6.17.1",
+    "@types/bcryptjs": "^2.4.6",
+    "bcrypt": "^6.0.0",
+    "prisma": "^6.19.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.18.0",
+    "@nestjs/schematics": "^11.0.9",
+    "@nestjs/testing": "^11.1.9",
+    "@rocketseat/eslint-config": "^2.2.2",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.7",
+    "globals": "^16.0.0",
+    "inquirer": "^13.0.1",
+    "prettier": "^3.4.2",
+    "source-map-support": "^0.5.21",
+    "tmp": "^0.2.5",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "webpack": "^5.103.0"
+  }
+}
