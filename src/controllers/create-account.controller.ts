@@ -14,7 +14,7 @@ import { z } from 'zod'
 const createAccountBodySchema = z.object({
   name: z.string().min(3),
   email: z.email('Please enter a valid email address'),
-  // email: z.string().email() ← outra forma de usar o zod para validar e-mail (deprecated)
+  // email: z.string().email() ← deprecated
   password: z.string().min(6),
 })
 type CreateAccountBody = z.infer<typeof createAccountBodySchema>

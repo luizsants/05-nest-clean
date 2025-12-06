@@ -17,7 +17,7 @@ export class ZodValidationPipe implements PipeTransform {
         throw new BadRequestException({
           message: 'Validation failed',
           statusCode: 400,
-          //   errors: formatted,           // ← muito mais legível que o .format() antigo
+          //   errors: formatted,           // ← .format() antigo
           //   errors: z.treeifyError(error), // direto!
           errors: fromZodError(error), // ← usando zod-validation-error
         })
