@@ -34,3 +34,31 @@ $ npx prisma generate
 ```bash
 $ npx prisma migrate dev
 ```
+
+## 🔐 Generate RSA Key Pair for JWT (RS256) and Convert to Base64
+
+```bash
+# 1. Generate a private key
+openssl genrsa -out private.pem 2048
+
+# 2. Generate the public key from the private key
+openssl rsa -in private.pem -pubout -out public.pem
+
+# 3. Convert both keys to Base64 (Linux)
+base64 -w0 private.pem > private_base64.txt
+base64 -w0 public.pem  > public_base64.txt
+
+# 4. Copy contents of private_base64.txt and public_base64.txt into:
+# JWT_PRIVATE_KEY=<contents of private_base64.txt>
+# JWT_PUBLIC_KEY=<contents of public_base64.txt>
+
+# MacOS / Portable alternative for step 3:
+cat private.pem | base64 | tr -d '\n' > private_base64.txt
+catcat public.pem  | base64 | tr -d '\n' > public_base64.txt
+
+# To display Base64 encoded keys directly in terminal:
+cat private.pem | base64 | tr -d '\n'
+cat public.pem  | base64 | tr -d '\n'
+
+
+```
