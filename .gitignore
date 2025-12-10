@@ -1,3 +1,15 @@
+# === TESTE E CHAVES ===
+*.http
+*.pem
+*.key
+*.crt
+*.cer
+*private*
+*public*
+*-base64.txt
+*.p12
+*.pfx
+
 # compiled output
 /dist
 /node_modules
