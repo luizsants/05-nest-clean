@@ -1,5 +1,6 @@
 # === TESTE E CHAVES ===
 *.http
+!client.example.http
 *.pem
 *.key
 *.crt

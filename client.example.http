@@ -1,0 +1,42 @@
+@baseUrl = http://localhost:3333
+@authToken = #### Token obtido na req POST sessions abaixo
+# @name create_account
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+    "name": "Luiz Silva",
+    "email": "misharia@rocket.com.br",
+    "password": "123456"
+}
+
+###
+
+# @name authenticate
+POST {{baseUrl}}/sessions
+Content-Type: application/json
+
+{
+    "name": "Luiz Silva",
+    "email": "misharia@rocket.com.br",
+    "password": "123456"
+}
+
+###
+
+# @name create_question
+POST {{baseUrl}}/questions
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "title": "LuizSilva",
+    "content": "mishariaaasdadsasdadsasd"
+}
+
+###
+
+# @name fetch_recent_questions
+GET {{baseUrl}}/questions?page=1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
