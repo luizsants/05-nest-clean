@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3333
-@authToken = #### Token obtido na req POST sessions abaixo
+@authToken = #### Token obtido na req POST/sessions abaixo
 # @name create_account
 POST {{baseUrl}}/accounts
 Content-Type: application/json
