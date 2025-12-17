@@ -1,3 +1,3 @@
-test('1', () => {
-  expect(1).toBe(1)
+describe('CreateAccountController (e2e)', () => {
+  test('[POST] /accounts', async () => {})
 })
