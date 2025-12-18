@@ -1,7 +1,8 @@
 import { AppModule } from '@/app.module'
 import { PrismaService } from '@/prisma/prisma.service'
-import { ConflictException, INestApplication } from '@nestjs/common'
+import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
+import { hash } from 'bcryptjs'
 import { randomUUID } from 'crypto'
 import request from 'supertest'
 
@@ -25,27 +26,38 @@ describe('Create Account Controller (e2e)', () => {
   //   await prisma.user.deleteMany()
   // })
 
-  test('[POST] /accounts', async () => {
+  afterAll(async () => {
+    await app.close()
+  })
+
+  test('[POST] /sessions - should authenticate successfully', async () => {
     const email = `luiz-${randomUUID()}@example.com`
 
-    const response = await request(app.getHttpServer()).post('/accounts').send({
-      name: 'Luiz Silva',
+    await prisma.user.create({
+      data: {
+        name: 'Luiz Silva',
+        email: email,
+        password: await hash('123456', 8),
+      },
+    })
+
+    const response = await request(app.getHttpServer()).post('/sessions').send({
       email,
       password: '123456',
     })
 
     expect(response.statusCode).toBe(201)
-
-    const userOnDatabase = await prisma.user.findUnique({
-      where: { email }, // corrigi o email aqui também
+    expect(response.body).toEqual({
+      access_token: expect.any(String),
     })
 
-    expect(userOnDatabase).toBeTruthy()
-    expect(userOnDatabase?.name).toBe('Luiz Silva')
-  })
+    // ← Não é necessário verificar o banco de dados aqui
 
-  afterAll(async () => {
-    await app.close()
+    // const userOnDatabase = await prisma.user.findUnique({
+    //   where: { email: 'luiz4@gmail.com' }, // corrigi o email aqui também
+    // })
+    // expect(userOnDatabase).toBeTruthy()
+    // expect(userOnDatabase?.name).toBe('Luiz Silva')
   })
 })
 

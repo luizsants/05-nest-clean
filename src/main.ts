@@ -13,6 +13,6 @@ async function bootstrap() {
 
   const port = configService.get('PORT', { infer: true }) // ← port: number
 
-  await app.listen(port, '0.0.0.0')
+  await app.listen(port, '0.0.0.0') // tirar 0.0.0.0 para rodar localmente
 }
 bootstrap()
