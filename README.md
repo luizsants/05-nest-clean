@@ -54,7 +54,7 @@ base64 -w0 public.pem  > public_base64.txt
 
 # MacOS / Portable alternative for step 3:
 cat private.pem | base64 | tr -d '\n' > private_base64.txt
-catcat public.pem  | base64 | tr -d '\n' > public_base64.txt
+cat public.pem  | base64 | tr -d '\n' > public_base64.txt
 
 # To display Base64 encoded keys directly in terminal:
 cat private.pem | base64 | tr -d '\n'
@@ -62,3 +62,32 @@ cat public.pem  | base64 | tr -d '\n'
 
 
 ```
+
+## Setting up the Test Database (Required for Prisma 7+)
+
+Prisma 7+ (with `@prisma/adapter-pg`) has stricter connection timing when using dynamic schemas.  
+To ensure reliable and isolated e2e tests, we use a **dedicated test database** instead of per-test schemas.
+
+### 1. Create the test database (run once)
+
+The development database is `nest-clean`.  
+Tests use a separate database called `nest-clean-test` inside the same Postgres container.
+
+```bash
+# Create the dedicated test database
+docker exec -it nest-clean-pg createdb -U docker nest-clean-test
+```
+
+Note: You won't see the new database listed in Docker Desktop's container view because it's created inside the same Postgres server (the container only shows one Postgres instance). This is normal and expected — PostgreSQL supports multiple independent databases in a single server.
+
+### 2. View the test database with Prisma Studio
+
+To visually inspect the test database (e.g., check if data was created or cleaned), open a separate Prisma Studio instance pointing to the test database:
+
+### Open Prisma Studio for the TEST database
+
+```bash
+DATABASE_URL=postgresql://docker:docker@localhost:6000/nest-clean-test?schema=public npx prisma studio
+```
+
+You can use the .env.test file or create another one with your credentials.
