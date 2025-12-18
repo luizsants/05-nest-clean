@@ -11,15 +11,10 @@ export class ZodValidationPipe implements PipeTransform {
       return parsedValue
     } catch (error) {
       if (error instanceof z.ZodError) {
-        // Forma NOVA e recomendada (Zod v4+)
-        const formatted = z.treeifyError(error)
-
         throw new BadRequestException({
           message: 'Validation failed',
           statusCode: 400,
-          //   errors: formatted,           // ← .format() antigo
-          //   errors: z.treeifyError(error), // direto!
-          errors: fromZodError(error), // ← usando zod-validation-error
+          errors: z.prettifyError(error),
         })
       }
       throw new BadRequestException('Validation failed')

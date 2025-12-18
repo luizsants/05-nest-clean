@@ -16,23 +16,13 @@ const pageQueryParamSchema = z
 type PageQueryParamSchema = z.infer<typeof pageQueryParamSchema>
 
 const queryValidationPipe = new ZodValidationPipe(pageQueryParamSchema)
-
-// const createQuestionBodySchema = z.object({
-//   title: z.string().min(5),
-//   content: z.string(),
-// })
-
-// const bodyValidationPipe = new ZodValidationPipe(createQuestionBodySchema)
-
-// type CreateQuestionBodySchema = z.infer<typeof createQuestionBodySchema>
-
 @Controller('/questions')
 @UseGuards(JwtAuthGuard)
 export class FetchRecentQuestionController {
   constructor(private prisma: PrismaService) {}
 
   @Get()
-  async handle(@Query('page') page: PageQueryParamSchema) {
+  async handle(@Query('page', queryValidationPipe) page: PageQueryParamSchema) {
     const perPage = 1
 
     const questions = await this.prisma.question.findMany({
