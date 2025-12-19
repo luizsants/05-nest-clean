@@ -22,10 +22,16 @@ export class FetchRecentQuestionController {
   constructor(private prisma: PrismaService) {}
 
   @Get()
-  async handle(@Query('page', queryValidationPipe) page: PageQueryParamSchema) {
-    const perPage = 1
+  async handle(
+    @Query('page', queryValidationPipe) page: PageQueryParamSchema,
+    @CurrentUser() user: UserPayload,
+  ) {
+    const perPage = 20
 
     const questions = await this.prisma.question.findMany({
+      where: {
+        authorId: user.sub,
+      },
       take: perPage,
       skip: (page - 1) * perPage,
       orderBy: {

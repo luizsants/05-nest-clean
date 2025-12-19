@@ -5,7 +5,7 @@ import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 
-describe('Create Question Controller (e2e)', () => {
+describe('Fetch Recent Questions Controller (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let jwt: JwtService
@@ -26,34 +26,46 @@ describe('Create Question Controller (e2e)', () => {
     await app.close()
   })
 
-  test('[POST] /questions - should create a new question', async () => {
-    const email = 'question-user@example.com'
+  test('[GET] /questions - should fetch recent questions', async () => {
+    const email = 'fetch-user@example.com'
 
     const user = await prisma.user.create({
       data: {
-        name: 'Question User',
+        name: 'Fetch User',
         email,
         password: 'password123',
       },
     })
 
-    const access_token = jwt.sign({ sub: user.id })
-
-    const response = await request(app.getHttpServer())
-      .post('/questions')
-      .set('Authorization', `Bearer ${access_token}`)
-      .send({
-        title: 'Test Question',
-        content: 'This is a test question content.',
-      })
-
-    expect(response.statusCode).toBe(201)
-
-    const question = await prisma.question.findFirst({
-      where: { authorId: user.id },
+    // Cria 2 perguntas para este usuário
+    await prisma.question.createMany({
+      data: [
+        {
+          title: 'Question 1',
+          slug: 'question-1-slug',
+          content: 'Content for question 1',
+          authorId: user.id,
+        },
+        {
+          title: 'Question 2',
+          slug: 'question-2-slug',
+          content: 'Content for question 2',
+          authorId: user.id,
+        },
+      ],
     })
 
-    expect(question).toBeTruthy()
-    expect(question?.title).toBe('Test Question')
+    const access_token = jwt.sign({ sub: user.id })
+
+    // Busca as perguntas do usuário
+    const response = await request(app.getHttpServer())
+      .get('/questions')
+      .set('Authorization', `Bearer ${access_token}`)
+
+    expect(response.statusCode).toBe(200)
+    expect(response.body.questions).toBeDefined()
+    expect(response.body.questions.length).toBe(2)
+    expect(response.body.questions[0].title).toBe('Question 1')
+    expect(response.body.questions[1].title).toBe('Question 2')
   })
 })

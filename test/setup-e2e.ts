@@ -35,6 +35,7 @@ execSync('npx prisma migrate deploy', {
 
 // Limpa TODAS as tabelas relevantes ANTES DE CADA teste
 beforeEach(async () => {
+  await prisma.question.deleteMany()
   await prisma.user.deleteMany()
   // Sem timeout → rápido e seguro
 })
