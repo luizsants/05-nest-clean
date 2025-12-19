@@ -66,8 +66,8 @@ describe('Fetch Recent Questions Controller (e2e)', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.body.questions).toBeDefined()
-    // Verifica que retorna pelo menos as 2 questions criadas neste teste
-    expect(response.body.questions.length).toBeGreaterThanOrEqual(2)
+    // Agora retorna exatamente as 2 questions do usuário (filtrado por authorId)
+    expect(response.body.questions.length).toBe(2)
     // Verifica que contém as titles das questions criadas
     const titles = response.body.questions.map((q: any) => q.title)
     expect(titles).toContain('Question 1')
