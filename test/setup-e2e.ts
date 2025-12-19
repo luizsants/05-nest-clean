@@ -9,45 +9,24 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
-// Aplica migrations UMA VEZ no início (como já estava)
-console.log('Aplicando migrations no banco de teste...')
+// Aplica migrations UMA VEZ no início
+console.log('🔄 Aplicando migrations no banco de teste...')
 execSync('npx prisma migrate deploy', { stdio: 'inherit' })
 
-// Limpa TODAS as tabelas relevantes ANTES DE CADA teste
+// Limpa TODAS as tabelas antes de cada teste (sem paralelismo = seguro)
 beforeEach(async () => {
+  console.log('🧹 Limpando banco de dados...')
+  // Deletar questions ANTES de users (por causa da foreign key)
+  await prisma.question.deleteMany()
   await prisma.user.deleteMany()
-  // Sem timeout → rápido e seguro
 })
-// Opcional: desconecta no final
+
+// Desconecta ao final
 afterAll(async () => {
+  console.log('👋 Desconectando do banco de teste')
   await prisma.$disconnect()
+  await pool.end()
 })
-// import 'dotenv/config'
-
-// import { PrismaClient } from '../generated/prisma'
-// import { randomUUID } from 'crypto'
-// import { execSync } from 'child_process'
-// import { Pool } from 'pg'
-// import { PrismaPg } from '@prisma/adapter-pg'
-
-// const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-// const adapter = new PrismaPg(pool)
-// const prisma = new PrismaClient({ adapter })
-
-// function generateUniqueDatabaseUrl(schemaId: string) {
-//   if (!process.env.DATABASE_URL) {
-//     throw new Error('DATABASE_URL is not defined in environment variables')
-//   }
-//   const url = new URL(process.env.DATABASE_URL)
-//   url.searchParams.set('schema', schemaId)
-
-//   return url.toString()
-// }
-
-// const schemaId = randomUUID()
-
-// beforeAll(async () => {
-//   const databaseUrl = generateUniqueDatabaseUrl(schemaId)
 
 //   process.env.DATABASE_URL = databaseUrl
 

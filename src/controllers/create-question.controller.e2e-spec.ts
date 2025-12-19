@@ -21,6 +21,10 @@ describe('Create Question Controller (e2e)', () => {
     jwt = moduleRef.get<JwtService>(JwtService)
 
     await app.init()
+
+    // Limpa dados do teste anterior
+    await prisma.question.deleteMany()
+    await prisma.user.deleteMany()
   })
 
   test('[POST] /questions', async () => {
@@ -38,6 +42,7 @@ describe('Create Question Controller (e2e)', () => {
 
     const response = await request(app.getHttpServer())
       .post('/questions')
+      .set('Authorization', `Bearer ${access_token}`)
       .send({
         title: 'Sample Question Title',
         content: 'This is a sample question content.',
