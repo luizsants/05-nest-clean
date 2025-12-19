@@ -8,6 +8,9 @@ export default defineConfig({
     globals: true,
     root: './',
     setupFiles: ['./test/setup-e2e.ts'],
+    env: {
+      PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING: '1',
+    },
   },
   plugins: [
     tsConfigPaths(),

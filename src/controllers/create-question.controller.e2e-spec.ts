@@ -38,6 +38,7 @@ describe('Create Question Controller (e2e)', () => {
 
     const response = await request(app.getHttpServer())
       .post('/questions')
+      .set('Authorization', `Bearer ${access_token}`)
       .send({
         title: 'Sample Question Title',
         content: 'This is a sample question content.',

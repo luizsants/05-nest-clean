@@ -80,7 +80,22 @@ docker exec -it nest-clean-pg createdb -U docker nest-clean-test
 
 Note: You won't see the new database listed in Docker Desktop's container view because it's created inside the same Postgres server (the container only shows one Postgres instance). This is normal and expected — PostgreSQL supports multiple independent databases in a single server.
 
-### 2. View the test database with Prisma Studio
+### 2. Important: Prisma Engines Checksum
+
+The project includes `PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1` in test configuration.
+
+**Why?** This prevents Prisma from trying to download checksum verification files from the internet during test execution.
+
+**Is it safe?** YES ✅
+
+- Engines are already validated when you run `npm install`
+- Only skips redundant online verification during tests
+- **Recommended** for environments with proxy/firewall restrictions
+- **No impact** on machines without network restrictions
+
+This is a **best practice** for CI/CD and corporate environments.
+
+### 3. View the test database with Prisma Studio
 
 To visually inspect the test database (e.g., check if data was created or cleaned), open a separate Prisma Studio instance pointing to the test database:
 
