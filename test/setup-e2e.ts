@@ -1,9 +1,7 @@
 // test/setup-e2e.ts
 import 'dotenv/config'
 import { execSync } from 'child_process'
-import { Pool } from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '../generated/prisma'
+import { randomUUID } from 'crypto'
 
 /**
  * PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
@@ -18,12 +16,27 @@ import { PrismaClient } from '../generated/prisma'
  */
 process.env.PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING = '1'
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-const adapter = new PrismaPg(pool)
-const prisma = new PrismaClient({ adapter })
+function generateUniqueDatabaseUrl(schemaId: string) {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is not defined in environment variables')
+  }
+  const url = new URL(process.env.DATABASE_URL)
+  url.searchParams.set('schema', schemaId)
+  return url.toString()
+}
 
-// Aplica migrations UMA VEZ no início (como já estava)
-console.log('Aplicando migrations no banco de teste...')
+// Gera schema UUID único para este arquivo de teste (paralelismo seguro)
+const schemaId = randomUUID()
+const databaseUrl = generateUniqueDatabaseUrl(schemaId)
+
+// Sobrescreve DATABASE_URL para usar schema isolado no banco de teste
+process.env.DATABASE_URL = databaseUrl
+// Exporta para uso nos testes
+process.env.TEST_SCHEMA_ID = schemaId
+
+console.log(`[Setup] Schema de teste: ${schemaId}`)
+
+// Aplica migrations no schema UUID isolado
 execSync('npx prisma migrate deploy', {
   stdio: 'inherit',
   env: {
@@ -33,14 +46,17 @@ execSync('npx prisma migrate deploy', {
   },
 })
 
-// Limpa TODAS as tabelas relevantes ANTES DE CADA teste
-beforeEach(async () => {
-  // Deletar questions ANTES de users (devido à foreign key)
-  await prisma.question.deleteMany()
-  await prisma.user.deleteMany()
-  // Sem timeout → rápido e seguro
-})
-// Opcional: desconecta no final
+// Cleanup: remove schema UUID ao final
 afterAll(async () => {
+  const { Pool } = await import('pg')
+  const { PrismaPg } = await import('@prisma/adapter-pg')
+  const { PrismaClient } = await import('../generated/prisma')
+
+  const pool = new Pool({ connectionString: databaseUrl })
+  const adapter = new PrismaPg(pool)
+  const prisma = new PrismaClient({ adapter })
+
+  await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaId}" CASCADE`)
   await prisma.$disconnect()
+  console.log(`[Cleanup] Schema ${schemaId} removido`)
 })

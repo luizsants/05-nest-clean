@@ -11,6 +11,7 @@ export default defineConfig({
     env: {
       PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING: '1',
     },
+    // Paralelismo ATIVADO - schemas UUID garantem isolamento total
   },
   plugins: [
     tsConfigPaths(),

@@ -9,7 +9,7 @@ import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../../generated/prisma'
 
-describe('Create Question Controller (e2e)', () => {
+describe('Create recent questions Controller (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let jwt: JwtService
@@ -34,38 +34,48 @@ describe('Create Question Controller (e2e)', () => {
     await app.init()
   })
 
-  test('[POST] /questions', async () => {
-    const email = `luiz-${randomUUID()}@example.com`
-    const title = `Question Title ${randomUUID()}`
-    const content = `This is a sample question content - ${randomUUID()}`
-
+  test('[GET] /questions', async () => {
     const user = await prisma.user.create({
       data: {
-        name: 'Luiz Silva',
-        email: email,
+        name: 'John Doe',
+        email: `john-${randomUUID()}@example.com`,
         password: '123456',
       },
     })
 
+    // Cria questions de uma vez (mais eficiente e evita race condition)
+    const questionsData = Array.from({ length: 2 }, (_, i) => ({
+      title: `Question Title ${i + 1}`,
+      slug: `question-title-${i + 1}-${randomUUID()}`,
+      content: `This is question content number ${i + 1}`,
+      authorId: user.id,
+    }))
+
+    await prisma.question.createMany({
+      data: questionsData,
+    })
+
+    // Verificar se as questions foram criadas
+    const questionsInDb = await prisma.question.findMany()
+    console.log('Questions no banco:', questionsInDb.length)
+
     const access_token = jwt.sign({ sub: user.id })
 
     const response = await request(app.getHttpServer())
-      .post('/questions')
+      .get('/questions')
       .set('Authorization', `Bearer ${access_token}`)
-      .send({
-        title,
-        content,
-      })
 
-    expect(response.statusCode).toBe(201)
+    console.log('Response body:', response.body)
 
-    const questionOnDatabase = await prisma.question.findFirst({
-      where: { title: title },
-    })
-
-    expect(questionOnDatabase).toBeTruthy()
-    expect(questionOnDatabase?.title).toBe(title)
-    expect(questionOnDatabase?.content).toBe(content)
+    expect(response.statusCode).toBe(200)
+    // Verifica que contém as 2 questions criadas neste teste (pode haver outras de schemas antigos não limpos)
+    expect(response.body.questions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: 'Question Title 1' }),
+        expect.objectContaining({ title: 'Question Title 2' }),
+      ])
+    )
+    expect(response.body.questions.length).toBeGreaterThanOrEqual(2)
   })
 
   afterAll(async () => {
