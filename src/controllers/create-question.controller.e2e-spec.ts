@@ -1,9 +1,8 @@
 import { AppModule } from '@/app.module'
 import { PrismaService } from '@/prisma/prisma.service'
-import { ConflictException, INestApplication } from '@nestjs/common'
+import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
-import { randomUUID } from 'crypto'
 import request from 'supertest'
 
 describe('Create Question Controller (e2e)', () => {
@@ -27,14 +26,18 @@ describe('Create Question Controller (e2e)', () => {
     await prisma.user.deleteMany()
   })
 
-  test('[POST] /questions', async () => {
-    const email = `luiz-${randomUUID()}@example.com`
+  afterAll(async () => {
+    await app.close()
+  })
+
+  test('[POST] /questions - should create a new question', async () => {
+    const email = 'question-user@example.com'
 
     const user = await prisma.user.create({
       data: {
-        name: 'Luiz Silva',
-        email: email,
-        password: '123456',
+        name: 'Question User',
+        email,
+        password: 'password123',
       },
     })
 
@@ -44,21 +47,17 @@ describe('Create Question Controller (e2e)', () => {
       .post('/questions')
       .set('Authorization', `Bearer ${access_token}`)
       .send({
-        title: 'Sample Question Title',
-        content: 'This is a sample question content.',
+        title: 'Test Question',
+        content: 'This is a test question content.',
       })
 
     expect(response.statusCode).toBe(201)
 
-    const userOnDatabase = await prisma.user.findUnique({
-      where: { email },
+    const question = await prisma.question.findFirst({
+      where: { authorId: user.id },
     })
 
-    expect(userOnDatabase).toBeTruthy()
-    expect(userOnDatabase?.name).toBe('Luiz Silva')
-  })
-
-  afterAll(async () => {
-    await app.close()
+    expect(question).toBeTruthy()
+    expect(question?.title).toBe('Test Question')
   })
 })

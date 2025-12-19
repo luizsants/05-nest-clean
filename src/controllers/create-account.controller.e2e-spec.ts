@@ -1,8 +1,7 @@
 import { AppModule } from '@/app.module'
 import { PrismaService } from '@/prisma/prisma.service'
-import { ConflictException, INestApplication } from '@nestjs/common'
+import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { randomUUID } from 'crypto'
 import request from 'supertest'
 
 describe('Create Account Controller (e2e)', () => {
@@ -24,26 +23,23 @@ describe('Create Account Controller (e2e)', () => {
     await prisma.user.deleteMany()
   })
 
-  test('[POST] /accounts', async () => {
-    const email = `luiz-${randomUUID()}@example.com`
+  afterAll(async () => {
+    await app.close()
+  })
+
+  test('[POST] /accounts - should create a new account', async () => {
+    const email = 'newuser@example.com'
 
     const response = await request(app.getHttpServer()).post('/accounts').send({
-      name: 'Luiz Silva',
+      name: 'New User',
       email,
       password: '123456',
     })
 
     expect(response.statusCode).toBe(201)
 
-    const userOnDatabase = await prisma.user.findUnique({
-      where: { email }, // corrigi o email aqui também
-    })
-
-    expect(userOnDatabase).toBeTruthy()
-    expect(userOnDatabase?.name).toBe('Luiz Silva')
-  })
-
-  afterAll(async () => {
-    await app.close()
+    const user = await prisma.user.findUnique({ where: { email } })
+    expect(user).toBeTruthy()
+    expect(user?.name).toBe('New User')
   })
 })
