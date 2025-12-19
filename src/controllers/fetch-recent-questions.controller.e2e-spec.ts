@@ -5,36 +5,33 @@ import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import { randomUUID } from 'crypto'
 import request from 'supertest'
-import { Pool } from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '../../generated/prisma'
 
-describe('Create recent questions Controller (e2e)', () => {
+describe('Fetch Recent Questions Controller (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let jwt: JwtService
 
   beforeAll(async () => {
-    // Cria PrismaService customizado usando o schema UUID do teste
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-    const adapter = new PrismaPg(pool)
-    const prismaClient = new PrismaClient({ adapter })
-
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue(prismaClient)
-      .compile()
+    }).compile()
 
     app = moduleRef.createNestApplication()
     prisma = moduleRef.get<PrismaService>(PrismaService)
     jwt = moduleRef.get<JwtService>(JwtService)
 
     await app.init()
+
+    // Limpa dados do teste anterior
+    await prisma.question.deleteMany()
+    await prisma.user.deleteMany()
   })
 
-  test('[GET] /questions', async () => {
+  test('[GET] /questions - should fetch recent questions', async () => {
+    // Limpa novamente logo antes do teste
+    await prisma.question.deleteMany()
+    await prisma.user.deleteMany()
+
     const user = await prisma.user.create({
       data: {
         name: 'John Doe',
@@ -43,21 +40,23 @@ describe('Create recent questions Controller (e2e)', () => {
       },
     })
 
-    // Cria questions de uma vez (mais eficiente e evita race condition)
-    const questionsData = Array.from({ length: 2 }, (_, i) => ({
-      title: `Question Title ${i + 1}`,
-      slug: `question-title-${i + 1}-${randomUUID()}`,
-      content: `This is question content number ${i + 1}`,
-      authorId: user.id,
-    }))
-
+    // Cria 2 questions
     await prisma.question.createMany({
-      data: questionsData,
+      data: [
+        {
+          title: 'Question 1',
+          slug: `question-1-${randomUUID()}`,
+          content: 'Content 1',
+          authorId: user.id,
+        },
+        {
+          title: 'Question 2',
+          slug: `question-2-${randomUUID()}`,
+          content: 'Content 2',
+          authorId: user.id,
+        },
+      ],
     })
-
-    // Verificar se as questions foram criadas
-    const questionsInDb = await prisma.question.findMany()
-    console.log('Questions no banco:', questionsInDb.length)
 
     const access_token = jwt.sign({ sub: user.id })
 
@@ -65,17 +64,14 @@ describe('Create recent questions Controller (e2e)', () => {
       .get('/questions')
       .set('Authorization', `Bearer ${access_token}`)
 
-    console.log('Response body:', response.body)
-
     expect(response.statusCode).toBe(200)
-    // Verifica que contém as 2 questions criadas neste teste (pode haver outras de schemas antigos não limpos)
-    expect(response.body.questions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ title: 'Question Title 1' }),
-        expect.objectContaining({ title: 'Question Title 2' }),
-      ])
-    )
-    expect(response.body.questions.length).toBeGreaterThanOrEqual(2)
+    expect(response.body.questions).toBeDefined()
+    // Agora retorna exatamente as 2 questions do usuário (filtrado por authorId)
+    expect(response.body.questions.length).toBe(2)
+    // Verifica que contém as titles das questions criadas
+    const titles = response.body.questions.map((q: any) => q.title)
+    expect(titles).toContain('Question 1')
+    expect(titles).toContain('Question 2')
   })
 
   afterAll(async () => {

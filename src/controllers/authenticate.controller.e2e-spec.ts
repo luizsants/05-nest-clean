@@ -19,6 +19,10 @@ describe('Create Account Controller (e2e)', () => {
     prisma = moduleRef.get<PrismaService>(PrismaService)
 
     await app.init()
+
+    // Limpa dados do teste anterior
+    await prisma.question.deleteMany()
+    await prisma.user.deleteMany()
   })
 
   afterAll(async () => {

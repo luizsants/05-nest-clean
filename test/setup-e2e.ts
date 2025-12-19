@@ -1,62 +1,95 @@
 // test/setup-e2e.ts
 import 'dotenv/config'
 import { execSync } from 'child_process'
-import { randomUUID } from 'crypto'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaClient } from '../generated/prisma'
 
-/**
- * PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
- *
- * Evita que o Prisma tente baixar checksums da internet durante testes.
- * Isso é SEGURO porque:
- * - As engines já foram validadas no `npm install`
- * - Apenas pula verificação redundante online
- * - Necessário em ambientes com proxy/firewall (ex: rede corporativa)
- * - Não afeta máquinas sem restrições de rede
- * - Prática recomendada para CI/CD
- */
-process.env.PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING = '1'
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
-function generateUniqueDatabaseUrl(schemaId: string) {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is not defined in environment variables')
-  }
-  const url = new URL(process.env.DATABASE_URL)
-  url.searchParams.set('schema', schemaId)
-  return url.toString()
-}
+// Aplica migrations UMA VEZ no início
+console.log('🔄 Aplicando migrations no banco de teste...')
+execSync('npx prisma migrate deploy', { stdio: 'inherit' })
 
-// Gera schema UUID único para este arquivo de teste (paralelismo seguro)
-const schemaId = randomUUID()
-const databaseUrl = generateUniqueDatabaseUrl(schemaId)
-
-// Sobrescreve DATABASE_URL para usar schema isolado no banco de teste
-process.env.DATABASE_URL = databaseUrl
-// Exporta para uso nos testes
-process.env.TEST_SCHEMA_ID = schemaId
-
-console.log(`[Setup] Schema de teste: ${schemaId}`)
-
-// Aplica migrations no schema UUID isolado
-execSync('npx prisma migrate deploy', {
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING: '1',
-    PRISMA_SKIP_POSTINSTALL_GENERATE: '1',
-  },
+// Limpa TODAS as tabelas antes de cada teste (sem paralelismo = seguro)
+beforeEach(async () => {
+  console.log('🧹 Limpando banco de dados...')
+  // Deletar questions ANTES de users (por causa da foreign key)
+  await prisma.question.deleteMany()
+  await prisma.user.deleteMany()
 })
 
-// Cleanup: remove schema UUID ao final
+// Desconecta ao final
 afterAll(async () => {
-  const { Pool } = await import('pg')
-  const { PrismaPg } = await import('@prisma/adapter-pg')
-  const { PrismaClient } = await import('../generated/prisma')
-
-  const pool = new Pool({ connectionString: databaseUrl })
-  const adapter = new PrismaPg(pool)
-  const prisma = new PrismaClient({ adapter })
-
-  await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaId}" CASCADE`)
+  console.log('👋 Desconectando do banco de teste')
   await prisma.$disconnect()
-  console.log(`[Cleanup] Schema ${schemaId} removido`)
+  await pool.end()
 })
+
+//   process.env.DATABASE_URL = databaseUrl
+
+//   console.log(databaseUrl)
+
+//   execSync('npx prisma migrate deploy')
+// })
+
+// afterAll(async () => {
+//   await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaId}" CASCADE`)
+//   await prisma.$disconnect()
+// })
+//-------------------------------------------------------------------------------------------------------
+
+// // test/setup-e2e.ts
+// import 'dotenv/config'
+// import { randomUUID } from 'crypto'
+// import { execSync } from 'child_process'
+// import { Pool } from 'pg'
+// import { PrismaPg } from '@prisma/adapter-pg'
+// import { PrismaClient } from '../generated/prisma'
+
+// function generateUniqueDatabaseUrl(schemaId: string) {
+//   if (!process.env.DATABASE_URL) {
+//     throw new Error('DATABASE_URL is not defined in environment variables')
+//   }
+//   const url = new URL(process.env.DATABASE_URL)
+//   url.searchParams.set('schema', schemaId)
+//   return url.toString()
+// }
+
+// // ← Isso tudo roda IMEDIATAMENTE quando o Vitest carrega o arquivo
+// const schemaId = randomUUID()
+// const databaseUrl = generateUniqueDatabaseUrl(schemaId)
+
+// process.env.DATABASE_URL = databaseUrl
+// process.env.TEST_SCHEMA_ID = schemaId // opcional, para cleanup
+
+// console.log(`Schema de teste: ${schemaId}`)
+// console.log(databaseUrl)
+
+// // Roda migrate no schema novo ANTES da app iniciar
+// execSync('npx prisma migrate deploy', { stdio: 'inherit' })
+
+// // Cleanup automático ao final do processo
+// const cleanupPool = new Pool({ connectionString: databaseUrl })
+// const cleanupAdapter = new PrismaPg(cleanupPool)
+// const prismaCleanup = new PrismaClient({ adapter: cleanupAdapter })
+
+// process.on('SIGINT', async () => {
+//   await prismaCleanup.$executeRawUnsafe(
+//     `DROP SCHEMA IF EXISTS "${schemaId}" CASCADE`,
+//   )
+//   await prismaCleanup.$disconnect()
+//   process.exit()
+// })
+
+// process.on('exit', async () => {
+//   try {
+//     await prismaCleanup.$executeRawUnsafe(
+//       `DROP SCHEMA IF EXISTS "${schemaId}" CASCADE`,
+//     )
+//     console.log(`Schema ${schemaId} removido`)
+//   } catch {}
+//   await prismaCleanup.$disconnect()
+// })

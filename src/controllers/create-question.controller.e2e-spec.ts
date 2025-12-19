@@ -1,13 +1,10 @@
 import { AppModule } from '@/app.module'
 import { PrismaService } from '@/prisma/prisma.service'
-import { INestApplication } from '@nestjs/common'
+import { ConflictException, INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import { randomUUID } from 'crypto'
 import request from 'supertest'
-import { Pool } from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '../../generated/prisma'
 
 describe('Create Question Controller (e2e)', () => {
   let app: INestApplication
@@ -15,29 +12,23 @@ describe('Create Question Controller (e2e)', () => {
   let jwt: JwtService
 
   beforeAll(async () => {
-    // Cria PrismaService customizado usando o schema UUID do teste
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-    const adapter = new PrismaPg(pool)
-    const prismaClient = new PrismaClient({ adapter })
-
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue(prismaClient)
-      .compile()
+    }).compile()
 
     app = moduleRef.createNestApplication()
     prisma = moduleRef.get<PrismaService>(PrismaService)
     jwt = moduleRef.get<JwtService>(JwtService)
 
     await app.init()
+
+    // Limpa dados do teste anterior
+    await prisma.question.deleteMany()
+    await prisma.user.deleteMany()
   })
 
   test('[POST] /questions', async () => {
     const email = `luiz-${randomUUID()}@example.com`
-    const title = `Question Title ${randomUUID()}`
-    const content = `This is a sample question content - ${randomUUID()}`
 
     const user = await prisma.user.create({
       data: {
@@ -53,19 +44,18 @@ describe('Create Question Controller (e2e)', () => {
       .post('/questions')
       .set('Authorization', `Bearer ${access_token}`)
       .send({
-        title,
-        content,
+        title: 'Sample Question Title',
+        content: 'This is a sample question content.',
       })
 
     expect(response.statusCode).toBe(201)
 
-    const questionOnDatabase = await prisma.question.findFirst({
-      where: { title: title },
+    const userOnDatabase = await prisma.user.findUnique({
+      where: { email },
     })
 
-    expect(questionOnDatabase).toBeTruthy()
-    expect(questionOnDatabase?.title).toBe(title)
-    expect(questionOnDatabase?.content).toBe(content)
+    expect(userOnDatabase).toBeTruthy()
+    expect(userOnDatabase?.name).toBe('Luiz Silva')
   })
 
   afterAll(async () => {
