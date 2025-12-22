@@ -14,18 +14,14 @@ describe('Create Account Controller (e2e)', () => {
     }).compile()
 
     app = moduleRef.createNestApplication()
-    prisma = moduleRef.get<PrismaService>(PrismaService)
+    prisma = moduleRef.get(PrismaService)
 
     await app.init()
-
-    // Limpa dados do teste anterior
-    await prisma.question.deleteMany()
-    await prisma.user.deleteMany()
   })
 
-  afterAll(async () => {
-    await app.close()
-  })
+  // afterAll(async () => {
+  //   await app.close()
+  // })
 
   test('[POST] /accounts - should create a new account', async () => {
     const email = 'newuser@example.com'
@@ -39,6 +35,7 @@ describe('Create Account Controller (e2e)', () => {
     expect(response.statusCode).toBe(201)
 
     const user = await prisma.user.findUnique({ where: { email } })
+
     expect(user).toBeTruthy()
     expect(user?.name).toBe('New User')
   })

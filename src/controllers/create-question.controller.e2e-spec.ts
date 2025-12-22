@@ -5,7 +5,7 @@ import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 
-describe('Create Question Controller (e2e)', () => {
+describe('Create Question (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let jwt: JwtService
@@ -20,15 +20,11 @@ describe('Create Question Controller (e2e)', () => {
     jwt = moduleRef.get<JwtService>(JwtService)
 
     await app.init()
-
-    // Limpa dados do teste anterior
-    await prisma.question.deleteMany()
-    await prisma.user.deleteMany()
   })
 
-  afterAll(async () => {
-    await app.close()
-  })
+  // afterAll(async () => {
+  //   await app.close()
+  // })
 
   test('[POST] /questions - should create a new question', async () => {
     const email = 'question-user@example.com'

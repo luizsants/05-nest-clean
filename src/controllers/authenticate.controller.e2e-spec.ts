@@ -4,6 +4,7 @@ import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { hash } from 'bcryptjs'
 import request from 'supertest'
+import { string } from 'zod'
 
 describe('Authenticate Controller (e2e)', () => {
   let app: INestApplication
@@ -18,15 +19,11 @@ describe('Authenticate Controller (e2e)', () => {
     prisma = moduleRef.get<PrismaService>(PrismaService)
 
     await app.init()
-
-    // Limpa dados do teste anterior
-    await prisma.question.deleteMany()
-    await prisma.user.deleteMany()
   })
 
-  afterAll(async () => {
-    await app.close()
-  })
+  // afterAll(async () => {
+  //   await app.close()
+  // })
 
   test('[POST] /sessions - should authenticate successfully', async () => {
     const email = 'test-auth@example.com'
@@ -46,6 +43,8 @@ describe('Authenticate Controller (e2e)', () => {
     })
 
     expect(response.statusCode).toBe(201)
-    expect(response.body.access_token).toBeDefined()
+    expect(response.body).toEqual({
+      access_token: expect.any(String),
+    })
   })
 })

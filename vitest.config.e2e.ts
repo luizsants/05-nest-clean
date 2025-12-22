@@ -8,6 +8,7 @@ export default defineConfig({
     globals: true,
     root: './',
     setupFiles: ['./test/setup-e2e.ts'],
+    fileParallelism: false,
     pool: 'forks', // Testes rodam sequencialmente (sem paralelismo)
   },
   plugins: [
