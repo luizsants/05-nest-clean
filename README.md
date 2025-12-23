@@ -106,3 +106,7 @@ DATABASE_URL=postgresql://docker:docker@localhost:6000/nest-clean-test?schema=pu
 ```
 
 You can use the .env.test file or create another one with your credentials.
+
+### Dev observations:
+
+Usar vi.waitfor() em vez do arquivo wait-for

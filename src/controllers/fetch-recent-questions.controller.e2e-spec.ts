@@ -3,6 +3,7 @@ import { PrismaService } from '@/prisma/prisma.service'
 import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
+import { randomUUID } from 'crypto'
 import request from 'supertest'
 
 describe('Fetch Recent Questions Controller (e2e)', () => {
@@ -27,7 +28,10 @@ describe('Fetch Recent Questions Controller (e2e)', () => {
   })
 
   test('[GET] /questions - should fetch recent questions', async () => {
-    const email = 'fetch-user@example.com'
+    const email = `fetch${randomUUID()}@example.com`
+    const title1 = `Question ${randomUUID()}`
+    const title2 = `Question ${randomUUID()}`
+    const content = 'This is a test question content.'
 
     const user = await prisma.user.create({
       data: {
@@ -41,15 +45,15 @@ describe('Fetch Recent Questions Controller (e2e)', () => {
     await prisma.question.createMany({
       data: [
         {
-          title: 'Question 1',
+          title: title1,
           slug: 'question-1-slug',
-          content: 'Content for question 1',
+          content: content + `for ${title1} `,
           authorId: user.id,
         },
         {
-          title: 'Question 2',
+          title: title2,
           slug: 'question-2-slug',
-          content: 'Content for question 2',
+          content: content + `for ${title2} `,
           authorId: user.id,
         },
       ],
@@ -65,7 +69,7 @@ describe('Fetch Recent Questions Controller (e2e)', () => {
     expect(response.statusCode).toBe(200)
     expect(response.body.questions).toBeDefined()
     expect(response.body.questions.length).toBe(2)
-    expect(response.body.questions[0].title).toBe('Question 1')
-    expect(response.body.questions[1].title).toBe('Question 2')
+    expect(response.body.questions[0].title).toBe(title1)
+    expect(response.body.questions[1].title).toBe(title2)
   })
 })
