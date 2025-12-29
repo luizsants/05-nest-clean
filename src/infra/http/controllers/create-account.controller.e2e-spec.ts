@@ -1,5 +1,5 @@
-import { AppModule } from '@/app.module'
-import { PrismaService } from '@/prisma/prisma.service'
+import { AppModule } from '@/infra/app.module'
+import { PrismaService } from '@/infra/prisma/prisma.service'
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
@@ -19,10 +19,6 @@ describe('Create Account Controller (e2e)', () => {
     await app.init()
   })
 
-  // afterAll(async () => {
-  //   await app.close()
-  // })
-
   test('[POST] /accounts - should create a new account', async () => {
     const email = 'newuser@example.com'
 
@@ -35,7 +31,6 @@ describe('Create Account Controller (e2e)', () => {
     expect(response.statusCode).toBe(201)
 
     const user = await prisma.user.findUnique({ where: { email } })
-
     expect(user).toBeTruthy()
     expect(user?.name).toBe('New User')
   })

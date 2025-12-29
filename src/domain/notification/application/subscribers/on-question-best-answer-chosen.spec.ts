@@ -10,6 +10,8 @@ import {
 } from '../use-cases/send-notification'
 import { InMemoryNotificationsRepository } from 'test/repositories/in-memory-notifications-repository'
 import { makeQuestion } from 'test/factories/make-question'
+import { MockInstance } from 'vitest'
+import { OnQuestionBestAnswerChosen } from './on-question-best-answer-chosen'
 
 let inMemoryQuestionAttachmentRepository: InMemoryQuestionAttachmentRepository
 let inMemoryQuestionsRespository: InMemoryQuestionsRepository
@@ -17,8 +19,6 @@ let inMemoryAnswerAttachmentsRepository: InMemoryAnswerAttachmentRepository
 let inMemoryAnswersRepository: InMemoryAnswersRepository
 let inMemoryNotificationRepository: InMemoryNotificationsRepository
 let sendNotificationUseCase: SendNotificationUseCase
-import { MockInstance } from 'vitest'
-import { OnQuestionBestAnswerChosen } from './on-question-best-answer-chosen'
 
 // let sendNotificationExecuteSpy: MockInstance
 let sendNotificationExecuteSpy: MockInstance<
@@ -46,7 +46,7 @@ describe('On Question Best Answer Chosen', () => {
 
     sendNotificationExecuteSpy = vi.spyOn(sendNotificationUseCase, 'execute')
 
-    new OnQuestionBestAnswerChosen(
+    void new OnQuestionBestAnswerChosen(
       inMemoryAnswersRepository,
       sendNotificationUseCase,
     )

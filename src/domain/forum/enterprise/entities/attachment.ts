@@ -10,6 +10,7 @@ export class Attachment extends Entity<AttachmentProps> {
   get title() {
     return this.props.title
   }
+
   get link() {
     return this.props.link
   }

@@ -11,6 +11,7 @@ import {
 } from '../use-cases/send-notification'
 import { InMemoryNotificationsRepository } from 'test/repositories/in-memory-notifications-repository'
 import { makeQuestion } from 'test/factories/make-question'
+import { MockInstance } from 'vitest'
 
 let inMemoryQuestionAttachmentRepository: InMemoryQuestionAttachmentRepository
 let inMemoryQuestionsRespository: InMemoryQuestionsRepository
@@ -18,7 +19,6 @@ let inMemoryAnswerAttachmentsRepository: InMemoryAnswerAttachmentRepository
 let inMemoryAnswersRepository: InMemoryAnswersRepository
 let inMemoryNotificationRepository: InMemoryNotificationsRepository
 let sendNotificationUseCase: SendNotificationUseCase
-import { MockInstance } from 'vitest'
 
 // let sendNotificationExecuteSpy: MockInstance
 let sendNotificationExecuteSpy: MockInstance<
@@ -46,7 +46,10 @@ describe('On Answer Created ', () => {
 
     sendNotificationExecuteSpy = vi.spyOn(sendNotificationUseCase, 'execute')
 
-    new OnAnswerCreated(inMemoryQuestionsRespository, sendNotificationUseCase)
+    void new OnAnswerCreated(
+      inMemoryQuestionsRespository,
+      sendNotificationUseCase,
+    )
   })
 
   it('should send a notification when an answer is created', async () => {

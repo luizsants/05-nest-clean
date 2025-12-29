@@ -1,5 +1,5 @@
-import { AppModule } from '@/app.module'
-import { PrismaService } from '@/prisma/prisma.service'
+import { AppModule } from '@/infra/app.module'
+import { PrismaService } from '@/infra/prisma/prisma.service'
 import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
@@ -22,10 +22,6 @@ describe('Create Question (e2e)', () => {
     await app.init()
   })
 
-  // afterAll(async () => {
-  //   await app.close()
-  // })
-
   test('[POST] /questions - should create a new question', async () => {
     const email = 'question-user@example.com'
 
@@ -37,11 +33,11 @@ describe('Create Question (e2e)', () => {
       },
     })
 
-    const access_token = jwt.sign({ sub: user.id })
+    const accessToken = jwt.sign({ sub: user.id })
 
     const response = await request(app.getHttpServer())
       .post('/questions')
-      .set('Authorization', `Bearer ${access_token}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send({
         title: 'Test Question',
         content: 'This is a test question content.',

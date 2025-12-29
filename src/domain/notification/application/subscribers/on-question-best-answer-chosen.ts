@@ -18,6 +18,7 @@ export class OnQuestionBestAnswerChosen implements EventHandler {
       QuestionBestAnswerChosenEvent.name,
     )
   }
+
   private async sendQuestionBeastAnswerNotification({
     question,
     bestAnswerId,

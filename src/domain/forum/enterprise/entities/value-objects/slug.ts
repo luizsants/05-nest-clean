@@ -8,6 +8,7 @@ export class Slug {
   static create(slug: string) {
     return new Slug(slug)
   }
+
   /**
    * Receives a string and normalize it as a slug.
    *

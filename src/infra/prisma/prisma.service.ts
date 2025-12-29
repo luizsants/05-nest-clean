@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
-import { PrismaClient } from '../../generated/prisma/client.js'
+import { PrismaClient } from '@/../generated/prisma/client.js'
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 
@@ -13,9 +13,11 @@ export class PrismaService
     const adapter = new PrismaPg(pool)
     super({ adapter })
   }
+
   onModuleInit() {
     return this.$connect()
   }
+
   onModuleDestroy() {
     return this.$disconnect()
   }
