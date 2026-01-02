@@ -24,6 +24,10 @@
 ## Project setup
 
 ```bash
+$ docker compose up -d
+```
+
+```bash
 $ npm install
 ```
 
@@ -77,8 +81,6 @@ Tests use a separate database called `nest-clean-test` inside the same Postgres 
 # Create the dedicated test database
 docker exec -it nest-clean-pg createdb -U docker nest-clean-test
 ```
-
-Note: You won't see the new database listed in Docker Desktop's container view because it's created inside the same Postgres server (the container only shows one Postgres instance). This is normal and expected — PostgreSQL supports multiple independent databases in a single server.
 
 ### 2. Important: Prisma Engines Checksum
 

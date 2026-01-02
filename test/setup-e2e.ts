@@ -21,12 +21,6 @@ beforeEach(async () => {
   await prisma.user.deleteMany()
 })
 
-// Limpa TODAS as tabelas relevantes ANTES DE CADA teste
-beforeEach(async () => {
-  await prisma.question.deleteMany()
-  await prisma.user.deleteMany()
-  // Sem timeout → rápido e seguro
-})
 // Opcional: desconecta no final
 afterAll(async () => {
   console.log('👋 Desconectando do banco de teste')
