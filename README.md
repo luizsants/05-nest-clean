@@ -102,6 +102,10 @@ To visually inspect the test database (e.g., check if data was created or cleane
 ### Open Prisma Studio for the TEST database
 
 ```bash
+dotenv -e .env.test npx prisma studio
+```
+
+```bash
 DATABASE_URL=postgresql://docker:docker@localhost:6000/nest-clean-test?schema=public npx prisma studio
 ```
 
