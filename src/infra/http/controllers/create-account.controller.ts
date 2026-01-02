@@ -37,7 +37,7 @@ export class CreateAccountController {
       throw new ConflictException('Email already in use')
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 8)
 
     await this.prisma.user.create({
       data: {
