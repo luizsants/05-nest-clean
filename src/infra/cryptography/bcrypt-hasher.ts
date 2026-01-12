@@ -13,16 +13,3 @@ export class BcryptHasher implements HashGenerator, HashComparer {
     return compare(plain, hashed)
   }
 }
-
-
-
-ACIMA DE TUDO - Perguntar chico autorizacao pra comecar 
-
-katrine pra rodar 1 limits
-
-Pedir vamsi mandar 2 deals - testa se chega no flex
-
-Marcao
-sabino  
-katrine - semana que vem disponivel? 
-vamsi 
