@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // test/setup-e2e.ts
 import 'dotenv/config'
 import { execSync } from 'child_process'
@@ -11,7 +12,10 @@ const prisma = new PrismaClient({ adapter })
 
 // Aplica migrations UMA VEZ no início
 console.log('🔄 Aplicando migrations no banco de teste...')
-execSync('npx prisma migrate deploy', { stdio: 'inherit' })
+execSync('npx prisma migrate deploy', {
+  stdio: 'inherit',
+  env: { ...process.env },
+})
 
 // Limpa TODAS as tabelas antes de cada teste (sem paralelismo = seguro)
 beforeEach(async () => {

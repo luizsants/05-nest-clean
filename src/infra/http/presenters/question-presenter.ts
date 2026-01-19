@@ -1,5 +1,4 @@
 import { Question } from '@/domain/forum/enterprise/entities/question'
-import { create } from 'domain'
 
 export class QuestionPresenter {
   static toHTTP(question: Question) {

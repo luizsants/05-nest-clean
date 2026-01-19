@@ -1,15 +1,7 @@
-import {
-  Body,
-  ConflictException,
-  Controller,
-  HttpCode,
-  Post,
-  UsePipes,
-} from '@nestjs/common'
-import * as bcrypt from 'bcrypt' // ← Correct import
+import { Body, Controller, HttpCode, Post, UsePipes } from '@nestjs/common'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
-import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { z } from 'zod'
+import { RegisterStudentUseCase } from '@/domain/forum/application/use-cases/register-student'
 
 const createAccountBodySchema = z.object({
   name: z.string().min(3),
@@ -21,7 +13,7 @@ type CreateAccountBody = z.infer<typeof createAccountBodySchema>
 
 @Controller('/accounts')
 export class CreateAccountController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private registerStudent: RegisterStudentUseCase) {}
 
   @Post()
   @HttpCode(201)
@@ -29,22 +21,14 @@ export class CreateAccountController {
   async handle(@Body() body: CreateAccountBody) {
     const { name, email, password } = body
 
-    const existing = await this.prisma.user.findMany({
-      where: { email },
+    const result = await this.registerStudent.execute({
+      name,
+      email,
+      password,
     })
 
-    if (existing.length > 0) {
-      throw new ConflictException('Email already in use')
+    if (result.isLeft()) {
+      throw new Error()
     }
-
-    const hashedPassword = await bcrypt.hash(password, 8)
-
-    await this.prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-    })
   }
 }

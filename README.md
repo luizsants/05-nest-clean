@@ -82,6 +82,30 @@ Tests use a separate database called `nest-clean-test` inside the same Postgres 
 docker exec -it nest-clean-pg createdb -U docker nest-clean-test
 ```
 
+### Troubleshooting: Failed Migrations (P3009)
+
+If you see this error when running tests:
+
+```
+Error: P3009
+migrate found failed migrations in the target database
+```
+
+This means a previous migration was interrupted or failed. To fix it, **drop and recreate the test database**:
+
+```bash
+# Drop the test database (connect to 'postgres' db first)
+docker exec -it nest-clean-pg psql -U docker -d postgres -c "DROP DATABASE IF EXISTS \"nest-clean-test\";"
+
+# Recreate it
+docker exec -it nest-clean-pg psql -U docker -d postgres -c "CREATE DATABASE \"nest-clean-test\";"
+
+# Apply migrations
+DATABASE_URL="postgresql://docker:docker@localhost:6000/nest-clean-test?schema=public" npx prisma migrate deploy
+```
+
+> **Note:** The `-d postgres` flag is required because `psql` needs to connect to an existing database before running DROP/CREATE commands.
+
 ### 2. Important: Prisma Engines Checksum
 
 The project includes `PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1` in test configuration.

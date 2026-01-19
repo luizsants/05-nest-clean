@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { PaginationParams } from '@/core/repositories/pagination-params'
 import { QuestionsRepository } from '@/domain/forum/application/repositories/questions-repository'
 import { Question } from '@/domain/forum/enterprise/entities/question'
@@ -20,6 +22,7 @@ export class PrismaQuestionRepository implements QuestionsRepository {
 
     return PrismaQuestionMapper.toDomain(question)
   }
+
   async findBySlug(slug: string): Promise<Question | null> {
     const question = await this.prisma.question.findUnique({
       where: { slug },
@@ -31,6 +34,7 @@ export class PrismaQuestionRepository implements QuestionsRepository {
 
     return PrismaQuestionMapper.toDomain(question)
   }
+
   async findManyRecent({ page }: PaginationParams): Promise<Question[]> {
     const questions = await this.prisma.question.findMany({
       orderBy: { createdAt: 'desc' },
