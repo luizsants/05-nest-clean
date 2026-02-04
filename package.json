@@ -17,6 +17,7 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --inspect --logHeapUsage --threads=false",
     "test:e2e": "dotenv -e .env.test -- vitest run --config ./vitest.config.e2e.ts",
+    "test:e2e:watch": "dotenv -e .env.test -- vitest --config ./vitest.config.e2e.ts",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix"
   },
