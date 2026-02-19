@@ -17,10 +17,12 @@ execSync('npx prisma migrate deploy', {
   env: { ...process.env },
 })
 
-// Limpa TODAS as tabelas antes de cada teste (sem paralelismo = seguro)
+// Limpa TODAS as tabelas antes de cada teste (ordem respeita foreign keys)
 beforeEach(async () => {
   console.log('🧹 Limpando banco de dados...')
-  // Deletar questions ANTES de users (por causa da foreign key)
+  await prisma.attachment.deleteMany()
+  await prisma.comment.deleteMany()
+  await prisma.answer.deleteMany()
   await prisma.question.deleteMany()
   await prisma.user.deleteMany()
 })

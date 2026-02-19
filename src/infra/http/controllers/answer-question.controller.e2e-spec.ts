@@ -8,7 +8,7 @@ import request from 'supertest'
 import { QuestionFactory } from 'test/factories/make-question'
 import { StudentFactory } from 'test/factories/make-student'
 
-describe('Edit Question (e2e)', () => {
+describe('Answer  Question (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let jwt: JwtService
@@ -29,7 +29,7 @@ describe('Edit Question (e2e)', () => {
     await app.init()
   })
 
-  test('[PUT] /questions/:id - should edit a question', async () => {
+  test('[POST] /questions/:questionId/answers', async () => {
     const email = 'question-user@example.com'
 
     const user = await studentFactory.makePrismaStudent({ email })
@@ -43,24 +43,21 @@ describe('Edit Question (e2e)', () => {
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
     const response = await request(app.getHttpServer())
-      .put(`/questions/${questionId}`)
+      .post(`/questions/${questionId}/answers`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        title: 'New Title',
-        content: 'New Content',
+        content: 'New Answer',
       })
 
-    expect(response.statusCode).toBe(204)
+    expect(response.statusCode).toBe(201)
 
-    const questionOnDatabase = await prisma.question.findFirst({
+    const answerOnDatabase = await prisma.answer.findFirst({
       where: {
-        title: 'New Title',
-        content: 'New Content',
+        content: 'New Answer',
       },
     })
 
-    expect(questionOnDatabase).toBeTruthy()
-    expect(questionOnDatabase?.title).toBe('New Title')
-    expect(questionOnDatabase?.content).toBe('New Content')
+    expect(answerOnDatabase).toBeTruthy()
+    expect(answerOnDatabase?.content).toBe('New Answer')
   })
 })
