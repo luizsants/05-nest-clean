@@ -11,6 +11,7 @@ import { AuthenticateStudentUseCase } from '@/domain/forum/application/use-cases
 import { CryptographyModule } from '../cryptography/cryptography.module'
 import { GetQuestionBySlugUseCase } from '@/domain/forum/application/use-cases/get-question-by-slug'
 import { GetQuestionBySlugController } from './controllers/get-question-by-slug.controller'
+import { EditQuestionController } from './controllers/edit-question.controller'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -20,6 +21,7 @@ import { GetQuestionBySlugController } from './controllers/get-question-by-slug.
     CreateQuestionController,
     FetchRecentQuestionsController,
     GetQuestionBySlugController,
+    EditQuestionController,
   ],
   providers: [
     CreateQuestionUseCase,
