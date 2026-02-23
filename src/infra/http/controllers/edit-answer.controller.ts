@@ -13,7 +13,6 @@ import { z } from 'zod'
 import { EditAnswerUseCase } from '@/domain/forum/application/use-cases/edit-answer'
 
 const editAnswerBodySchema = z.object({
-  title: z.string(),
   content: z.string(),
 })
 

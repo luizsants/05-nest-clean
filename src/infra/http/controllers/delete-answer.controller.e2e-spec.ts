@@ -9,12 +9,12 @@ import { AnswerFactory } from 'test/factories/make-answer'
 import { QuestionFactory } from 'test/factories/make-question'
 import { StudentFactory } from 'test/factories/make-student'
 
-describe('Edit Answer (e2e)', () => {
+describe('Delete Answer (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let jwt: JwtService
-  let answerFactory: AnswerFactory
   let studentFactory: StudentFactory
+  let answerFactory: AnswerFactory
   let questionFactory: QuestionFactory
 
   beforeAll(async () => {
@@ -26,13 +26,13 @@ describe('Edit Answer (e2e)', () => {
     app = moduleRef.createNestApplication()
     prisma = moduleRef.get<PrismaService>(PrismaService)
     jwt = moduleRef.get<JwtService>(JwtService)
-    answerFactory = moduleRef.get<AnswerFactory>(AnswerFactory)
     studentFactory = moduleRef.get<StudentFactory>(StudentFactory)
     questionFactory = moduleRef.get<QuestionFactory>(QuestionFactory)
+    answerFactory = moduleRef.get<AnswerFactory>(AnswerFactory)
     await app.init()
   })
 
-  test('[PUT] /answers/:id', async () => {
+  test('[DELETE] /answers/:id - should delete an answer', async () => {
     const email = 'question-user@example.com'
 
     const user = await studentFactory.makePrismaStudent({ email })
@@ -50,21 +50,18 @@ describe('Edit Answer (e2e)', () => {
     const answerId = answer.id.toString()
 
     const response = await request(app.getHttpServer())
-      .put(`/answers/${answerId}`)
+      .delete(`/answers/${answerId}`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        content: 'New answer content',
-      })
+      .send()
 
     expect(response.statusCode).toBe(204)
 
-    const answerOnDatabase = await prisma.answer.findFirst({
+    const answerOnDatabase = await prisma.answer.findUnique({
       where: {
-        content: 'New answer content',
+        id: answerId,
       },
     })
 
-    expect(answerOnDatabase).toBeTruthy()
-    expect(answerOnDatabase?.content).toBe('New answer content')
+    expect(answerOnDatabase).toBeNull()
   })
 })
