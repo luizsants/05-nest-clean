@@ -32,10 +32,12 @@ describe('Choose question best answer (e2e)', () => {
     await app.init()
   })
 
-  test('[PATCH] /questions/:answerId/choose-as-best', async () => {
-    const email = 'question-user@example.com'
+  afterAll(async () => {
+    await app.close()
+  })
 
-    const user = await studentFactory.makePrismaStudent({ email })
+  test('[PATCH] /questions/:answerId/choose-as-best', async () => {
+    const user = await studentFactory.makePrismaStudent()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
     const question = await questionFactory.makePrismaQuestion({

@@ -35,15 +35,12 @@ describe('Fetch question answers (e2e)', () => {
   })
 
   test('[GET] /questions/:questionId/answers', async () => {
-    const email = 'fetch-user@example.com'
-
-    const user = await studentFactory.makePrismaStudent({ email })
+    const user = await studentFactory.makePrismaStudent()
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
     const question = await questionFactory.makePrismaQuestion({
       authorId: user.id,
-      title: 'Question 1',
     })
 
     await Promise.all([

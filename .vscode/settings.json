@@ -1,1 +1,6 @@
-{}
+{
+  "terminal.integrated.shellIntegration.enabled": true,
+  "terminal.integrated.shellIntegration.decorationsEnabled": "both",
+  "terminal.integrated.commandDecorations.successColor": "#1f9",
+  "github.copilot.chat.terminalChatLocation": "terminal"
+}

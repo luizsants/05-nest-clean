@@ -29,10 +29,12 @@ describe('Comment on Question (e2e)', () => {
     await app.init()
   })
 
-  test('[POST] /questions/:questionId/comments', async () => {
-    const email = 'question-user@example.com'
+  afterAll(async () => {
+    await app.close()
+  })
 
-    const user = await studentFactory.makePrismaStudent({ email })
+  test('[POST] /questions/:questionId/comments', async () => {
+    const user = await studentFactory.makePrismaStudent()
 
     const question = await questionFactory.makePrismaQuestion({
       authorId: user.id,

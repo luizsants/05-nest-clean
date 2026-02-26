@@ -32,10 +32,12 @@ describe('Edit Answer (e2e)', () => {
     await app.init()
   })
 
-  test('[PUT] /answers/:id', async () => {
-    const email = 'question-user@example.com'
+  afterAll(async () => {
+    await app.close()
+  })
 
-    const user = await studentFactory.makePrismaStudent({ email })
+  test('[PUT] /answers/:id', async () => {
+    const user = await studentFactory.makePrismaStudent()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
     const question = await questionFactory.makePrismaQuestion({

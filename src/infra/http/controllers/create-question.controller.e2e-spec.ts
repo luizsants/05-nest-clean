@@ -27,10 +27,12 @@ describe('Create Question (e2e)', () => {
     await app.init()
   })
 
-  test('[POST] /questions - should create a new question', async () => {
-    const email = 'question-user@example.com'
+  afterAll(async () => {
+    await app.close()
+  })
 
-    const user = await studentFactory.makePrismaStudent({ email })
+  test('[POST] /questions - should create a new question', async () => {
+    const user = await studentFactory.makePrismaStudent()
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 

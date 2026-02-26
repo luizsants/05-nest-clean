@@ -29,10 +29,12 @@ describe('Edit Question (e2e)', () => {
     await app.init()
   })
 
-  test('[PUT] /questions/:id - should edit a question', async () => {
-    const email = 'question-user@example.com'
+  afterAll(async () => {
+    await app.close()
+  })
 
-    const user = await studentFactory.makePrismaStudent({ email })
+  test('[PUT] /questions/:id - should edit a question', async () => {
+    const user = await studentFactory.makePrismaStudent()
 
     const question = await questionFactory.makePrismaQuestion({
       authorId: user.id,

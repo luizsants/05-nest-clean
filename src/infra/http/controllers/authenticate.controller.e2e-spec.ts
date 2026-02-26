@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing'
 import { hash } from 'bcryptjs'
 import request from 'supertest'
 import { StudentFactory } from 'test/factories/make-student'
+import { faker } from '@faker-js/faker'
 
 describe('Authenticate Controller (e2e)', () => {
   let app: INestApplication
@@ -25,8 +26,12 @@ describe('Authenticate Controller (e2e)', () => {
     await app.init()
   })
 
+  afterAll(async () => {
+    await app.close()
+  })
+
   test('[POST] /sessions - should authenticate successfully', async () => {
-    const email = 'test-auth@example.com'
+    const email = faker.internet.email()
     const password = '123456'
 
     await studentFactory.makePrismaStudent({

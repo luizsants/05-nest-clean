@@ -7,6 +7,7 @@ import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { QuestionFactory } from 'test/factories/make-question'
 import { StudentFactory } from 'test/factories/make-student'
+import { randomUUID } from 'crypto'
 
 describe('Get question by slug Controller (e2e)', () => {
   let app: INestApplication
@@ -33,26 +34,28 @@ describe('Get question by slug Controller (e2e)', () => {
   })
 
   test('[GET] /questions/:slug - should get question by slug', async () => {
-    const email = 'fetch-user@example.com'
-
-    const user = await studentFactory.makePrismaStudent({ email })
+    const user = await studentFactory.makePrismaStudent()
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    const uniqueId = randomUUID().slice(0, 8)
+    const title = `Question ${uniqueId}`
+    const slugValue = `question-${uniqueId}-slug`
+
     await questionFactory.makePrismaQuestion({
       authorId: user.id,
-      title: 'Question 1',
-      slug: Slug.create('question-1-slug'),
+      title,
+      slug: Slug.create(slugValue),
     })
 
     // Busca as perguntas do usuário
     const response = await request(app.getHttpServer())
-      .get(`/questions/question-1-slug`)
+      .get(`/questions/${slugValue}`)
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(response.statusCode).toBe(200)
     expect(response.body).toEqual({
-      question: expect.objectContaining({ title: 'Question 1' }),
+      question: expect.objectContaining({ title }),
     })
   })
 })

@@ -43,9 +43,7 @@ describe('Fetch question comments (e2e)', () => {
   })
 
   test('[GET] /questions/:questionId/comments', async () => {
-    const email = 'fetch-user@example.com'
-
-    const user = await studentFactory.makePrismaStudent({ email })
+    const user = await studentFactory.makePrismaStudent()
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
