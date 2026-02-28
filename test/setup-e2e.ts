@@ -74,6 +74,8 @@ async function truncateTables(): Promise<void> {
     const client = await setupPool.connect()
     try {
       await client.query(`SET search_path TO "${SCHEMA_NAME}"`)
+
+      // Simple truncate without killing connections - let CASCADE handle it
       await client.query(`
         TRUNCATE TABLE ${TABLES_TO_TRUNCATE.map((t) => `"${t}"`).join(', ')} 
         RESTART IDENTITY CASCADE
@@ -87,7 +89,8 @@ async function truncateTables(): Promise<void> {
       !(error instanceof Error) ||
       !error.message.includes('does not exist')
     ) {
-      // Ignore truncate warnings
+      // Log but don't fail on truncate warnings
+      console.warn('Truncate warning (non-critical):', error)
     }
   }
 }
@@ -101,8 +104,8 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  // Don't drop schema here - other test files in this worker may need it
-  // Schema cleanup happens when worker exits (see below)
+  // Truncate data after test file completes (between-file cleanup)
+  await truncateTables()
 })
 
 // Cleanup when worker process exits (use both events for reliability)

@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker'
+import { randomUUID } from 'crypto'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import {
   Question,
@@ -12,10 +13,12 @@ export function makeQuestion(
   override: Partial<QuestionProps> = {},
   id?: UniqueEntityID,
 ) {
+  // Add UUID to title to ensure slug uniqueness across parallel tests
+  const uniqueId = randomUUID().slice(0, 8)
   const question = Question.create(
     {
       authorId: new UniqueEntityID(),
-      title: faker.lorem.sentence(),
+      title: `${faker.lorem.sentence()} [${uniqueId}]`,
       content: faker.lorem.text(),
       ...override,
     },

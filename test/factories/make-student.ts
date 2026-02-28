@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker'
+import { randomUUID } from 'crypto'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import {
   Student,
@@ -12,10 +13,12 @@ export function makeStudent(
   override: Partial<StudentProps> = {},
   id?: UniqueEntityID,
 ) {
+  // Add UUID to email to ensure uniqueness across parallel tests
+  const uniqueId = randomUUID().slice(0, 8)
   const student = Student.create(
     {
       name: faker.person.fullName(),
-      email: faker.internet.email(),
+      email: `user-${uniqueId}@test.com`,
       password: faker.internet.password(),
       ...override,
     },

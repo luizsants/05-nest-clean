@@ -27,7 +27,9 @@ export class PrismaService
       user: url.username,
       password: url.password,
       database: url.pathname.slice(1),
-      max: 5,
+      max: 25, // Increased from 5 to support parallel E2E tests
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
     }
 
     if (testSchema) {
