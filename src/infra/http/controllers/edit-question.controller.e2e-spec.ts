@@ -4,6 +4,7 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
+import { randomUUID } from 'crypto'
 import request from 'supertest'
 import { QuestionFactory } from 'test/factories/make-question'
 import { StudentFactory } from 'test/factories/make-student'
@@ -44,11 +45,15 @@ describe('Edit Question (e2e)', () => {
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // Add UUID to ensure slug uniqueness across parallel tests
+    const uniqueId = randomUUID().slice(0, 8)
+    const newTitle = `New Title [${uniqueId}]`
+
     const response = await request(app.getHttpServer())
       .put(`/questions/${questionId}`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        title: 'New Title',
+        title: newTitle,
         content: 'New Content',
       })
 
@@ -56,13 +61,13 @@ describe('Edit Question (e2e)', () => {
 
     const questionOnDatabase = await prisma.question.findFirst({
       where: {
-        title: 'New Title',
+        title: newTitle,
         content: 'New Content',
       },
     })
 
     expect(questionOnDatabase).toBeTruthy()
-    expect(questionOnDatabase?.title).toBe('New Title')
+    expect(questionOnDatabase?.title).toBe(newTitle)
     expect(questionOnDatabase?.content).toBe('New Content')
   })
 })
