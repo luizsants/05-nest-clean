@@ -37,12 +37,13 @@ let schemaReady = false
 let setupPool: Pool | null = null
 
 // Tables to truncate between test files (order matters for foreign keys)
+// Order: most dependent first, then base tables
 const TABLES_TO_TRUNCATE = [
-  'attachments',
-  'comments',
-  'answers',
-  'questions',
-  'users',
+  'comments', // depends on questions, answers, users
+  'attachments', // depends on questions, answers
+  'answers', // depends on questions, users
+  'questions', // depends on users
+  'users', // base table
 ]
 
 async function ensureSchemaExists(): Promise<void> {
@@ -75,22 +76,33 @@ async function truncateTables(): Promise<void> {
     try {
       await client.query(`SET search_path TO "${SCHEMA_NAME}"`)
 
-      // Simple truncate without killing connections - let CASCADE handle it
-      await client.query(`
-        TRUNCATE TABLE ${TABLES_TO_TRUNCATE.map((t) => `"${t}"`).join(', ')} 
-        RESTART IDENTITY CASCADE
-      `)
+      // Check which tables actually exist before truncating
+      const existingTables = await client.query<{ tablename: string }>(
+        `SELECT tablename FROM pg_tables WHERE schemaname = '${SCHEMA_NAME}'`,
+      )
+      const existingTableNames = new Set(
+        existingTables.rows.map((r) => r.tablename),
+      )
+
+      // Only truncate tables that exist
+      const tablesToTruncate = TABLES_TO_TRUNCATE.filter((t) =>
+        existingTableNames.has(t),
+      )
+
+      if (tablesToTruncate.length > 0) {
+        // Simple truncate without killing connections - let CASCADE handle it
+        await client.query(`
+          TRUNCATE TABLE ${tablesToTruncate.map((t) => `"${t}"`).join(', ')} 
+          RESTART IDENTITY CASCADE
+        `)
+      }
     } finally {
       client.release()
     }
   } catch (error) {
-    // Tables might not exist yet on first run - that's OK
-    if (
-      !(error instanceof Error) ||
-      !error.message.includes('does not exist')
-    ) {
-      // Log but don't fail on truncate warnings
-      console.warn('Truncate warning (non-critical):', error)
+    // Log but don't fail on truncate errors
+    if (error instanceof Error) {
+      console.warn('Truncate warning (non-critical):', error.message)
     }
   }
 }
