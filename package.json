@@ -23,6 +23,7 @@
     "lint:fix": "eslint src --ext .ts --fix"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1006.0",
     "@faker-js/faker": "^10.1.0",
     "@nestjs/common": "^11.1.14",
     "@nestjs/config": "^4.0.2",

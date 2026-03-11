@@ -1,5 +1,4 @@
 import {
-  ConsoleLogger,
   Controller,
   FileTypeValidator,
   MaxFileSizeValidator,
@@ -27,6 +26,9 @@ export class UploadAttachmentController {
     )
     file: Express.Multer.File,
   ) {
-    console.log(file)
+    return {
+      fileId: file.filename,
+      url: `/attachments/${file.filename}`,
+    }
   }
 }

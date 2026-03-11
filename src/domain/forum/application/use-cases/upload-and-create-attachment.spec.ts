@@ -1,6 +1,7 @@
 import { InMemoryAttachmentsRepository } from 'test/repositories/in-memory-attachments-repository'
 import { UploadAndCreateAttachmentUseCase } from './upload-and-create-attachment'
 import { FakeUploader } from 'test/storage/fake-uploader'
+import { InvalidAttachmentType } from './errors/invalid-attachment-type'
 
 let inMemoryAttachmentsRepository: InMemoryAttachmentsRepository
 let fakeUploader: FakeUploader
@@ -37,16 +38,14 @@ describe('Upload and create attachment', () => {
     })
   })
 
-  //   it('should hash student password upon registration', async () => {
-  //     const result = await sut.execute({
-  //       name: 'John Doe',
-  //       email: 'john.doe@example.com',
-  //       password: '123456',
-  //     })
+  it('should not be able to upload an attachment with invalid file type', async () => {
+    const result = await sut.execute({
+      fileName: 'img.mp3',
+      fileType: 'audio/mpeg',
+      body: Buffer.from(''),
+    })
 
-  //     const hashedPassword = await fakeHasher.hash('123456')
-
-  //     expect(result.isRight()).toBe(true)
-  //     expect(inMemoryStudentsRepository.items[0].password).toEqual(hashedPassword)
-  //   })
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidAttachmentType)
+  })
 })
