@@ -22,22 +22,32 @@ src/
 ## Key Patterns
 
 ### Either Pattern for Error Handling
+
 Use cases return `Either<Error, Success>` - never throw exceptions from domain layer:
+
 ```typescript
-type Response = Either<ResourceNotFoundError | NotAllowedError, { question: Question }>
+type Response = Either<
+  ResourceNotFoundError | NotAllowedError,
+  { question: Question }
+>
 ```
 
 ### Repository Abstraction
+
 Domain defines abstract repositories in `domain/*/application/repositories/`. Infrastructure implements them in `infra/database/prisma/repositories/`. NestJS DI binds them in `DatabaseModule`.
 
 ### Entity Creation
+
 Entities use static `create()` factory with optional ID:
+
 ```typescript
 const question = Question.create({ authorId, title, content }, existingId?)
 ```
 
 ### Mappers
+
 Convert between domain entities and Prisma models using mappers in `infra/database/prisma/mappers/`:
+
 ```typescript
 PrismaQuestionMapper.toPrisma(domainEntity)
 PrismaQuestionMapper.toDomain(prismaModel)
@@ -45,26 +55,30 @@ PrismaQuestionMapper.toDomain(prismaModel)
 
 ## Commands
 
-| Task | Command |
-|------|---------|
-| Dev server | `npm run start:dev` |
-| Unit tests | `npm run test` |
-| E2E tests | `npm run test:e2e` |
-| Lint | `npm run lint:fix` |
-| Prisma generate | `npx prisma generate` |
-| Prisma migrate | `npx prisma migrate dev` |
+| Task            | Command                  |
+| --------------- | ------------------------ |
+| Dev server      | `npm run start:dev`      |
+| Unit tests      | `npm run test`           |
+| E2E tests       | `npm run test:e2e`       |
+| Lint            | `npm run lint:fix`       |
+| Prisma generate | `npx prisma generate`    |
+| Prisma migrate  | `npx prisma migrate dev` |
 
 ## Testing
 
 ### Unit Tests
+
 Located alongside source files (`*.spec.ts`). Use in-memory repositories from `test/repositories/`.
 
 ### E2E Tests
+
 Located in `src/infra/http/controllers/*.e2e-spec.ts`. Use factory classes from `test/factories/` that have both:
+
 - `makeEntity()` - pure domain entity for unit tests
 - `makePrismaEntity()` - persisted entity for e2e tests
 
 **Prisma 7 Parallel Testing**: E2E tests run in parallel using worker-level schema isolation:
+
 - Each vitest worker gets a unique PostgreSQL schema (e.g., `test_w0_abc123`)
 - Test files within a worker share the schema but data is truncated between files
 - Configuration in `test/setup-e2e.ts` and `vitest.config.e2e.ts`
@@ -80,6 +94,7 @@ Located in `src/infra/http/controllers/*.e2e-spec.ts`. Use factory classes from 
 ## Authentication
 
 JWT RS256 with base64-encoded keys in env vars:
+
 - `JWT_PRIVATE_KEY` - for signing
 - `JWT_PUBLIC_KEY` - for verification
 
@@ -88,6 +103,7 @@ Use `@CurrentUser()` decorator to get authenticated user in controllers.
 ## Validation
 
 Use Zod schemas with `ZodValidationPipe` for request validation:
+
 ```typescript
 const schema = z.object({ title: z.string(), content: z.string() })
 @Body(new ZodValidationPipe(schema)) body: SchemaType
@@ -99,3 +115,20 @@ const schema = z.object({ title: z.string(), content: z.string() })
 - Controllers: `verb-noun.controller.ts`
 - E2E tests: `*.controller.e2e-spec.ts`
 - Repositories: `prisma-{entity}-repository.ts`
+
+## IMPORTANT - Do NOT Modify Without Explicit Request
+
+### Test Infrastructure (Protected Files)
+
+These files are carefully tuned and must NOT be modified unless the user explicitly asks:
+
+- `test/setup-e2e.ts` - E2E test setup (parallel schema isolation)
+- `vitest.config.e2e.ts` - Vitest E2E configuration
+- `.env.test` - Test environment variables
+
+### Vitest Config Rules
+
+- **NEVER add `poolOptions`** (maxForks, minForks, etc.) to `vitest.config.e2e.ts` — this has caused issues repeatedly and vitest defaults work correctly
+- **NEVER change `pool`, `fileParallelism`** without being asked
+- **NEVER change `setupFiles`** path or add new ones
+- Keep the config minimal — only `pool: 'forks'`, `fileParallelism`, and timeouts

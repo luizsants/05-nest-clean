@@ -3,6 +3,7 @@
   "parserOptions": {
     "project": "./tsconfig.json"
   },
+  "ignorePatterns": ["vitest.config*.ts", "prisma.config.ts"],
   "rules": {
     "no-console": "warn",
     "no-useless-constructor": "off",

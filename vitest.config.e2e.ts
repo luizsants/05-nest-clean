@@ -8,8 +8,13 @@ export default defineConfig({
     globals: true,
     root: './',
     setupFiles: ['./test/setup-e2e.ts'],
-    fileParallelism: false,
-    pool: 'forks', // Testes rodam sequencialmente (sem paralelismo)
+    // Parallel execution across files - each file runs in isolated worker
+    fileParallelism: true,
+    // Use forks for full process isolation (each worker = separate Node process)
+    pool: 'forks',
+    // Timeouts
+    testTimeout: 30000,
+    hookTimeout: 60000,
   },
   plugins: [
     tsConfigPaths(),
