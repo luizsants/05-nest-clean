@@ -10,8 +10,9 @@ import { execSync } from 'child_process'
 import { Pool } from 'pg'
 import { randomUUID } from 'crypto'
 
-// Load .env.test file explicitly
-config({ path: '.env.test' })
+// Load .env first (base configuration), then override with .env.test (test-specific)
+config({ path: '.env' })
+config({ path: '.env.test', override: true })
 
 // Parse base URL (remove any existing query parameters)
 const baseUrl = process.env.DATABASE_URL!.replace(/\?.*$/, '')

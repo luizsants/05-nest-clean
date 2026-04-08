@@ -20,6 +20,9 @@ export default defineConfig({
     tsConfigPaths(),
     swc.vite({
       module: { type: 'es6' },
+      jsc: {
+        keepClassNames: true,
+      },
     }),
   ],
 })

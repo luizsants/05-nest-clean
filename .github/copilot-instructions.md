@@ -72,18 +72,58 @@ Located alongside source files (`*.spec.ts`). Use in-memory repositories from `t
 
 ### E2E Tests - Parallel Execution (v1.2.0+)
 
-**Overview**: Tests run in parallel using Vitest workers with schema isolation. All 18 tests pass consistently in ~6-7s wall-clock time (vs ~60s sequential in v1.1.0).
+**Overview**: Tests run in parallel using Vitest workers with PostgreSQL schema isolation. The current setup is stable at 18/18 passing tests in ~6-7s wall-clock time, versus ~60s in the old sequential setup.
 
 **Location**: `src/infra/http/controllers/*.e2e-spec.ts`
 
+**Status / Performance**:
+
+- v1.2.0 is the stable parallel E2E baseline
+- 18/18 tests pass consistently across repeated runs
+- Typical wall-clock time: ~6-7s
+- Typical aggregate time: ~48-58s
+- Rough improvement over serial execution: ~90% wall-clock reduction
+
 **Architecture**:
 
-- Each Vitest worker gets isolated PostgreSQL schema: `test_w0_abc123`, `test_w1_def456`, etc.
-- Worker-level isolation (not file-level) prevents Prisma 7 pool caching issues
-- Tables truncated between test files for clean state
-- Uses `@prisma/adapter-pg` with configurable pool size
+- Each Vitest worker gets its own PostgreSQL schema, such as `test_w0_abc12345`
+- Isolation is worker-level, not file-level, to avoid Prisma 7 `pg.Pool` caching issues
+- Test files inside the same worker share the schema, but tables are truncated between runs
+- The schema search path is set at the PostgreSQL protocol level through `DATABASE_URL`
+- Prisma uses `@prisma/adapter-pg`, not the default Prisma engine
 
-**Key Patterns**:
+**Why worker-level schemas**:
+
+- File-level schemas created too many schemas and led to unstable connection behavior
+- Worker-level schemas keep the number of schemas small and remove race conditions seen with per-file isolation
+
+**Key configuration files**:
+
+- `vitest.config.e2e.ts`: `pool: 'forks'`, file parallelism enabled, `testTimeout: 30000`, `hookTimeout: 60000`
+- `test/setup-e2e.ts`: loads `.env.test`, generates worker schema names, creates/drops schemas, truncates tables, performs cleanup on exit
+- `src/infra/database/prisma/prisma.service.ts`: pool size 25, `idleTimeoutMillis: 30000`, `connectionTimeoutMillis: 5000`
+- `.env.test`: dedicated E2E database `nest-clean-test`
+
+**Test environment flow**:
+
+1. Load `.env.test`
+2. Generate worker schema name like `test_w${workerId}_${randomUUID(8)}`
+3. Set `DATABASE_URL` search path to that schema
+4. Drop and recreate schema if needed
+5. Push schema / run setup for the worker
+6. Truncate tables between test files
+7. Drop schemas during cleanup
+
+**Critical implementation details**:
+
+- Factories must inject UUIDs into fields with unique constraints
+- Example pattern: `const uniqueId = randomUUID().slice(0, 8)`
+- `make-question.ts` uses the UUID in the title to guarantee unique slugs
+- `make-student.ts` uses the UUID in the email to guarantee uniqueness
+- Pool size 25 is intentional; earlier lower values caused connection timeout failures under parallel load
+- Do not reintroduce aggressive `pg_terminate_backend()` calls in truncation logic; they previously caused unexpected connection termination during test runs
+
+**Required E2E patterns**:
 
 ```typescript
 // Factory for E2E tests (persisted to database)
@@ -93,33 +133,54 @@ await studentFactory.makePrismaStudent()
 const student = makeStudent()
 ```
 
-**Factory Implementation** (test/factories/):
+```typescript
+const uniqueId = randomUUID().slice(0, 8)
+title: `${faker.lorem.sentence()} [${uniqueId}]`
+email: `user-${uniqueId}@test.com`
+```
 
-- All factories use UUID in unique fields to prevent constraint violations across parallel workers
-- Example: `const uniqueId = randomUUID().slice(0, 8)` added to titles/emails
+**Available persisted factories**:
 
-**Configuration**:
+- `StudentFactory`
+- `QuestionFactory`
+- `AnswerFactory`
+- `QuestionCommentFactory`
+- `AnswerCommentFactory`
+- `QuestionAttachmentFactory`
+- `NotificationFactory`
 
-- `vitest.config.e2e.ts` - Pool forks, file parallelism, 30s timeout
-- `test/setup-e2e.ts` - Worker schema isolation, truncation logic
-- `src/infra/database/prisma/prisma.service.ts` - Pool size 25 (supports parallel tests)
-- `.env.test` - Separate test database (`nest-clean-test`)
+**Current E2E file set (18 tests)**:
 
-**Important**: Database is intentionally separate from `.env` (dev database). This isolation prevents accidental data loss during test runs and is a **best practice**.
+- Questions: `create-question.controller.e2e-spec.ts`, `edit-question.controller.e2e-spec.ts`, `delete-question-controller.e2e-spec.ts`, `get-question-by-slug-controller.e2e-spec.ts`, `fetch-recent-questions.controller.e2e-spec.ts`, `choose-question-best-answer.controller.e2e-spec.ts`
+- Question comments: `comment-on-question.controller.e2e-spec.ts`, `delete-question-comment.controller.e2e-spec.ts`
+- Question answers: `answer-question.controller.e2e-spec.ts`, `fetch-question-answer.controller.e2e-spec.ts`
+- Answer comments: `comment-on-answer.controller.e2e-spec.ts`, `delete-answer-comment.controller.e2e-spec.ts`
+- Answers: `fetch-answer-comments.controller.e2e-spec.ts`, `edit-answer.controller.e2e-spec.ts`, `delete-answer.controller.e2e-spec.ts`
+- Authentication: `create-account.controller.e2e-spec.ts`, `authenticate.controller.e2e-spec.ts`
+- Fetch comments: `fetch-question-comments.controller.e2e-spec.ts`
 
-**Previous Versions**:
+**How to run E2E tests**:
 
-- v1.1.0 (tag: `v1.1.0-controllers`) - Sequential E2E tests, ~60s execution
-- v1.2.0 (tag: `v1.2.0`) - Parallel E2E tests, 100% consistent, ~6-7s execution
+- Full suite: `npm run test:e2e`
+- Watch mode: `npm run test:e2e:watch`
+- Cleanup residual schemas: `npm run test:e2e:cleanup`
+- Single file: `npx vitest --config vitest.config.e2e.ts run src/infra/http/controllers/create-question.controller.e2e-spec.ts`
 
-**Migration Notes**: Project was developed using sequential tests (v1.1.0) until completion. Parallel execution (v1.2.0) was implemented post-completion. May contain cleanup opportunities for legacy sequential test artifacts (check git history for details).
+**Troubleshooting**:
 
-**Prisma 7 Parallel Testing Details**:
+- `Connection pool exhausted`: raise `max` in `prisma.service.ts` from 25 to 40 if the suite grows substantially
+- `duplicate key value violates unique constraint`: check factories for missing UUIDs in unique fields
+- `TRUNCATE table does not exist`: usually first-run timing during schema creation; expected warning if schema is not ready yet
+- `Connection terminated unexpectedly`: confirm truncation logic is not killing active backends
+- Tests hang on truncate: inspect `TABLES_TO_TRUNCATE` ordering for foreign-key deadlocks
 
-- Each vitest worker gets unique PostgreSQL schema (e.g., `test_w0_abc123`)
-- Test files within worker share schema but are truncated between runs
-- Configuration in `test/setup-e2e.ts` and `vitest.config.e2e.ts`
-- See `.github/e2e-tests-documentation.md` for troubleshooting and deep dive
+**Historical notes**:
+
+- v1.1.0 (`v1.1.0-controllers`) used sequential execution at ~60s
+- v1.2.0 introduced stable parallel E2E execution
+- The project was originally built under the sequential model; some legacy artifacts may still exist and should be evaluated with that history in mind
+
+**Important**: Keep `.env` and `.env.test` on separate databases. Parallel E2E execution assumes it is safe to truncate the test database repeatedly; sharing a database with development data is not acceptable.
 
 ## Database
 
