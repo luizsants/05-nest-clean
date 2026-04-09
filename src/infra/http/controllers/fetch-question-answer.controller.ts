@@ -11,6 +11,7 @@ import z from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { FetchQuestionAnswersUseCase } from '@/domain/forum/application/use-cases/fetch-question-answers'
 import { AnswerPresenter } from '../presenters/answer-presenter'
+import { PrismaService } from '@/infra/database/prisma/prisma.service'
 
 const pageQueryParamSchema = z
   .string()
@@ -24,7 +25,10 @@ type PageQueryParamSchema = z.infer<typeof pageQueryParamSchema>
 const queryValidationPipe = new ZodValidationPipe(pageQueryParamSchema)
 @Controller('/questions/:questionId/answers')
 export class FetchQuestionAnswersController {
-  constructor(private fetchQuestionAnswers: FetchQuestionAnswersUseCase) {}
+  constructor(
+    private fetchQuestionAnswers: FetchQuestionAnswersUseCase,
+    private prisma: PrismaService,
+  ) {}
 
   @Get()
   async handle(
@@ -43,6 +47,19 @@ export class FetchQuestionAnswersController {
 
     const answers = result.value.answers
 
-    return { answers: answers.map(AnswerPresenter.toHTTP) }
+    const authorIds = [...new Set(answers.map((a) => a.authorId.toString()))]
+    const authors = await this.prisma.user.findMany({
+      where: { id: { in: authorIds } },
+      select: { id: true, name: true },
+    })
+    const authorMap = new Map(authors.map((a) => [a.id, a.name]))
+
+    return {
+      answers: answers.map((a) => ({
+        ...AnswerPresenter.toHTTP(a),
+        authorId: a.authorId.toString(),
+        authorName: authorMap.get(a.authorId.toString()) ?? null,
+      })),
+    }
   }
 }

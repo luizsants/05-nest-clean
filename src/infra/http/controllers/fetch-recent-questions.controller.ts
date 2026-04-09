@@ -6,6 +6,7 @@ import z from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { FetchRecentQuestionsUseCase } from '@/domain/forum/application/use-cases/fetch-recent-questions'
 import { QuestionPresenter } from '../presenters/question-presenter'
+import { PrismaService } from '@/infra/database/prisma/prisma.service'
 
 const pageQueryParamSchema = z
   .string()
@@ -19,7 +20,10 @@ type PageQueryParamSchema = z.infer<typeof pageQueryParamSchema>
 const queryValidationPipe = new ZodValidationPipe(pageQueryParamSchema)
 @Controller('/questions')
 export class FetchRecentQuestionsController {
-  constructor(private fetchRecentQuestions: FetchRecentQuestionsUseCase) {}
+  constructor(
+    private fetchRecentQuestions: FetchRecentQuestionsUseCase,
+    private prisma: PrismaService,
+  ) {}
 
   @Get()
   async handle(
@@ -36,6 +40,19 @@ export class FetchRecentQuestionsController {
 
     const questions = result.value.questions
 
-    return { questions: questions.map(QuestionPresenter.toHTTP) }
+    const authorIds = [...new Set(questions.map((q) => q.authorId.toString()))]
+    const authors = await this.prisma.user.findMany({
+      where: { id: { in: authorIds } },
+      select: { id: true, name: true },
+    })
+    const authorMap = new Map(authors.map((a) => [a.id, a.name]))
+
+    return {
+      questions: questions.map((q) => ({
+        ...QuestionPresenter.toHTTP(q),
+        authorId: q.authorId.toString(),
+        authorName: authorMap.get(q.authorId.toString()) ?? null,
+      })),
+    }
   }
 }

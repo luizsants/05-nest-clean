@@ -11,6 +11,7 @@ import z from 'zod'
 import { AuthenticateStudentUseCase } from '@/domain/forum/application/use-cases/authenticate-student'
 import { WrongCredentialsError } from '@/domain/forum/application/use-cases/errors/wrong-credentials-error'
 import { Public } from '@/infra/auth/public'
+import { PrismaService } from '@/infra/database/prisma/prisma.service'
 
 const authenticateBodySchema = z.object({
   email: z.email('Please enter a valid email address'),
@@ -21,7 +22,10 @@ type AuthenticateBodySchema = z.infer<typeof authenticateBodySchema>
 @Controller('/sessions')
 @Public()
 export class AuthenticateController {
-  constructor(private authenticateStudent: AuthenticateStudentUseCase) {}
+  constructor(
+    private authenticateStudent: AuthenticateStudentUseCase,
+    private prisma: PrismaService,
+  ) {}
 
   @Post()
   @UsePipes(new ZodValidationPipe(authenticateBodySchema))
@@ -43,6 +47,17 @@ export class AuthenticateController {
 
     const { accessToken } = result.value
 
-    return { access_token: accessToken }
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { name: true, email: true },
+    })
+
+    return {
+      access_token: accessToken,
+      user: {
+        name: user?.name ?? null,
+        email: user?.email ?? null,
+      },
+    }
   }
 }
