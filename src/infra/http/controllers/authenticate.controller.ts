@@ -15,7 +15,7 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service'
 
 const authenticateBodySchema = z.object({
   email: z.email('Please enter a valid email address'),
-  password: z.string().min(6),
+  password: z.string().min(8),
 })
 type AuthenticateBodySchema = z.infer<typeof authenticateBodySchema>
 

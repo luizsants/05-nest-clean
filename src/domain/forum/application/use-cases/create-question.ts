@@ -10,6 +10,7 @@ interface CreateQuestionUseCaseRequest {
   authorId: string
   title: string
   content: string
+  category?: string
   attachmentsIds: string[]
 }
 
@@ -28,12 +29,14 @@ export class CreateQuestionUseCase {
     authorId,
     title,
     content,
+    category,
     attachmentsIds,
   }: CreateQuestionUseCaseRequest): Promise<CreateQuestionUseCaseResponse> {
     const question = Question.create({
       authorId: new UniqueEntityID(authorId),
       title,
       content,
+      category,
     })
 
     const questionAttachments = attachmentsIds.map((attachmentId) => {

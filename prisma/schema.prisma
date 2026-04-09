@@ -31,6 +31,7 @@ model Question {
   title        String
   slug         String    @unique
   content      String
+  category     String?
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime? @updatedAt @map("updated_at")
   authorId     String    @map("author_id")

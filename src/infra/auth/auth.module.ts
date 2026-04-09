@@ -20,6 +20,7 @@ import { EnvModule } from '../env/env.module'
         return {
           signOptions: {
             algorithm: 'RS256',
+            expiresIn: '1d',
           },
           privateKey: Buffer.from(privateKey, 'base64'),
           publicKey: Buffer.from(publicKey, 'base64'),

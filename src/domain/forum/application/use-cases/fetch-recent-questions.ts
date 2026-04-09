@@ -5,6 +5,8 @@ import { Injectable } from '@nestjs/common'
 
 interface FetchRecentQuestionsUseCaseRequest {
   page: number
+  search?: string
+  category?: string
 }
 type FetchRecentQuestionsUseCaseResponse = Either<
   null,
@@ -19,8 +21,14 @@ export class FetchRecentQuestionsUseCase {
 
   async execute({
     page,
+    search,
+    category,
   }: FetchRecentQuestionsUseCaseRequest): Promise<FetchRecentQuestionsUseCaseResponse> {
-    const questions = await this.questionsRepository.findManyRecent({ page })
+    const questions = await this.questionsRepository.findManyRecent({
+      page,
+      search,
+      category,
+    })
 
     return right({
       questions,

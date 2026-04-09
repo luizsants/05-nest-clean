@@ -5,13 +5,12 @@ import {
   Param,
   Query,
 } from '@nestjs/common'
-import { CurrentUser } from '@/infra/auth/current-user-decorator'
-import { UserPayload } from '@/infra/auth/jwt.strategy'
 import z from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CommentPresenter } from '../presenters/comment-presenter'
 import { FetchAnswerCommentsUseCase } from '@/domain/forum/application/use-cases/fetch-answer-comments'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
+import { Public } from '@/infra/auth/public'
 
 const pageQueryParamSchema = z
   .string()
@@ -24,6 +23,7 @@ type PageQueryParamSchema = z.infer<typeof pageQueryParamSchema>
 
 const queryValidationPipe = new ZodValidationPipe(pageQueryParamSchema)
 @Controller('/answers/:answerId/comments')
+@Public()
 export class FetchAnswerCommentsController {
   constructor(
     private fetchAnswerComments: FetchAnswerCommentsUseCase,
@@ -33,7 +33,6 @@ export class FetchAnswerCommentsController {
   @Get()
   async handle(
     @Query('page', queryValidationPipe) page: PageQueryParamSchema,
-    @CurrentUser() _user: UserPayload,
     @Param('answerId') answerId: string,
   ) {
     const result = await this.fetchAnswerComments.execute({

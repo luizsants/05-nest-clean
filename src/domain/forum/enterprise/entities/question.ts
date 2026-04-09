@@ -11,6 +11,7 @@ export interface QuestionProps {
   bestAnswerId?: UniqueEntityID | null
   title: string
   content: string
+  category?: string | null
   slug: Slug
   attachments: QuestionAttachmentList
   createdAt: Date
@@ -59,6 +60,15 @@ export class Question extends AggregateRoot<QuestionProps> {
 
   set content(content: string) {
     this.props.content = content
+    this.touch()
+  }
+
+  get category() {
+    return this.props.category
+  }
+
+  set category(category: string | undefined | null) {
+    this.props.category = category
     this.touch()
   }
 

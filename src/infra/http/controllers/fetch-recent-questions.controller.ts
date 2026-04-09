@@ -1,12 +1,10 @@
 import { BadRequestException, Controller, Get, Query } from '@nestjs/common'
-import { JwtAuthGuard } from '@/infra/auth/jwt-auth.guard'
-import { CurrentUser } from '@/infra/auth/current-user-decorator'
-import { UserPayload } from '@/infra/auth/jwt.strategy'
 import z from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { FetchRecentQuestionsUseCase } from '@/domain/forum/application/use-cases/fetch-recent-questions'
 import { QuestionPresenter } from '../presenters/question-presenter'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
+import { Public } from '@/infra/auth/public'
 
 const pageQueryParamSchema = z
   .string()
@@ -19,6 +17,7 @@ type PageQueryParamSchema = z.infer<typeof pageQueryParamSchema>
 
 const queryValidationPipe = new ZodValidationPipe(pageQueryParamSchema)
 @Controller('/questions')
+@Public()
 export class FetchRecentQuestionsController {
   constructor(
     private fetchRecentQuestions: FetchRecentQuestionsUseCase,
@@ -28,10 +27,13 @@ export class FetchRecentQuestionsController {
   @Get()
   async handle(
     @Query('page', queryValidationPipe) page: PageQueryParamSchema,
-    @CurrentUser() _user: UserPayload,
+    @Query('search') search?: string,
+    @Query('category') category?: string,
   ) {
     const result = await this.fetchRecentQuestions.execute({
       page,
+      search,
+      category,
     })
 
     if (result.isLeft()) {

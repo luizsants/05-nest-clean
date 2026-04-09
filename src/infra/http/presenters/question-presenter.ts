@@ -7,6 +7,7 @@ export class QuestionPresenter {
       title: question.title,
       slug: question.slug.value,
       content: question.content,
+      category: question.category ?? null,
       bestAnswerId: question.bestAnswerId?.toString(),
       createdAt: question.createdAt,
       updatedAt: question.updatedAt,

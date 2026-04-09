@@ -17,7 +17,7 @@ const createAccountBodySchema = z.object({
   name: z.string().min(3),
   email: z.email('Please enter a valid email address'),
   // email: z.string().email() ← deprecated
-  password: z.string().min(6),
+  password: z.string().min(8),
 })
 type CreateAccountBody = z.infer<typeof createAccountBodySchema>
 

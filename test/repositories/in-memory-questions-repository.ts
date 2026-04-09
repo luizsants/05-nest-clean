@@ -1,7 +1,9 @@
 import { DomainEvents } from '@/core/events/domain-events'
-import { PaginationParams } from '@/core/repositories/pagination-params'
 import { QuestionAttachmentsRepository } from '@/domain/forum/application/repositories/question-attachments-repository'
-import { QuestionsRepository } from '@/domain/forum/application/repositories/questions-repository'
+import {
+  FindManyRecentParams,
+  QuestionsRepository,
+} from '@/domain/forum/application/repositories/questions-repository'
 import { Question } from '@/domain/forum/enterprise/entities/question'
 
 export class InMemoryQuestionsRepository implements QuestionsRepository {
@@ -29,12 +31,25 @@ export class InMemoryQuestionsRepository implements QuestionsRepository {
     return question
   }
 
-  async findManyRecent({ page }: PaginationParams) {
-    const questions = this.items
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice((page - 1) * 20, page * 20)
+  async findManyRecent({ page, search, category }: FindManyRecentParams) {
+    let questions = this.items.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    )
 
-    return questions
+    if (search) {
+      const lower = search.toLowerCase()
+      questions = questions.filter(
+        (q) =>
+          q.title.toLowerCase().includes(lower) ||
+          q.content.toLowerCase().includes(lower),
+      )
+    }
+
+    if (category) {
+      questions = questions.filter((q) => q.category === category)
+    }
+
+    return questions.slice((page - 1) * 20, page * 20)
   }
 
   async create(question: Question) {
