@@ -8,10 +8,13 @@ export default defineConfig({
     globals: true,
     root: './',
     setupFiles: ['./test/setup-e2e.ts'],
+    // globalSetup runs cleanup after all tests finish
+    globalSetup: ['./test/global-teardown-e2e.ts'],
     // Parallel execution across files - each file runs in isolated worker
     fileParallelism: true,
     // Use forks for full process isolation (each worker = separate Node process)
     pool: 'forks',
+    maxForks: 4, // Limit workers to prevent exceeding pg max_connections (100)
     // Timeouts
     testTimeout: 30000,
     hookTimeout: 60000,

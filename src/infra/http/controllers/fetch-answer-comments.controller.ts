@@ -7,9 +7,8 @@ import {
 } from '@nestjs/common'
 import z from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
-import { CommentPresenter } from '../presenters/comment-presenter'
 import { FetchAnswerCommentsUseCase } from '@/domain/forum/application/use-cases/fetch-answer-comments'
-import { PrismaService } from '@/infra/database/prisma/prisma.service'
+import { CommentWithAuthorPresenter } from '../presenters/comment-with-author-presenter'
 import { Public } from '@/infra/auth/public'
 
 const pageQueryParamSchema = z
@@ -25,10 +24,7 @@ const queryValidationPipe = new ZodValidationPipe(pageQueryParamSchema)
 @Controller('/answers/:answerId/comments')
 @Public()
 export class FetchAnswerCommentsController {
-  constructor(
-    private fetchAnswerComments: FetchAnswerCommentsUseCase,
-    private prisma: PrismaService,
-  ) {}
+  constructor(private fetchAnswerComments: FetchAnswerCommentsUseCase) {}
 
   @Get()
   async handle(
@@ -44,22 +40,8 @@ export class FetchAnswerCommentsController {
       throw new BadRequestException()
     }
 
-    const answerComments = result.value.answerComments
+    const comments = result.value.comments
 
-    const authorIds = [
-      ...new Set(answerComments.map((c) => c.authorId.toString())),
-    ]
-    const authors = await this.prisma.user.findMany({
-      where: { id: { in: authorIds } },
-      select: { id: true, name: true },
-    })
-    const authorMap = new Map(authors.map((a) => [a.id, a.name]))
-
-    return {
-      comments: answerComments.map((c) => ({
-        ...CommentPresenter.toHTTP(c),
-        authorName: authorMap.get(c.authorId.toString()) ?? null,
-      })),
-    }
+    return { comments: comments.map(CommentWithAuthorPresenter.toHTTP) }
   }
 }

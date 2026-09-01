@@ -18,16 +18,23 @@ export async function cleanup() {
       await pool.query(`DROP SCHEMA IF EXISTS "${row.schema_name}" CASCADE`)
     }
 
-    // Truncate public schema tables
-    await pool.query(`
-      TRUNCATE TABLE 
-        public.attachments, 
-        public.comments, 
-        public.answers, 
-        public.questions, 
-        public.users 
-      RESTART IDENTITY CASCADE
-    `)
+    // Truncate public schema tables (IF EXISTS for resilience)
+    const tables = [
+      'notifications',
+      'attachments',
+      'comments',
+      'answers',
+      'questions',
+      'users',
+    ]
+
+    for (const table of tables) {
+      await pool
+        .query(`TRUNCATE TABLE public."${table}" RESTART IDENTITY CASCADE`)
+        .catch(() => {
+          // Table may not exist in all environments
+        })
+    }
 
     console.log(
       `✅ Cleaned up ${rows.length} test schemas and truncated public`,

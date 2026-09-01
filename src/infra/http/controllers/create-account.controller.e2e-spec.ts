@@ -30,7 +30,7 @@ describe('Create Account Controller (e2e)', () => {
     const response = await request(app.getHttpServer()).post('/accounts').send({
       name: 'New User',
       email,
-      password: '123456',
+      password: '12345678',
     })
 
     expect(response.statusCode).toBe(201)

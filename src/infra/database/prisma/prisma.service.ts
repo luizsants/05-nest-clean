@@ -19,6 +19,8 @@ export class PrismaService
     const connectionString = process.env.DATABASE_URL!
     const url = new URL(connectionString)
 
+    const isTest = !!testSchema
+
     // Build pool config with schema set via 'options' parameter
     // This sets search_path at PostgreSQL protocol level (synchronous, no race condition)
     const poolConfig: PoolConfig = {
@@ -27,7 +29,7 @@ export class PrismaService
       user: url.username,
       password: url.password,
       database: url.pathname.slice(1),
-      max: 25, // Increased from 5 to support parallel E2E tests
+      max: isTest ? 5 : 25, // Lower pool for tests to avoid exceeding pg max_connections
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     }
@@ -39,7 +41,12 @@ export class PrismaService
     }
 
     const pool = new Pool(poolConfig)
-    const adapter = new PrismaPg(pool)
+
+    // PrismaPg adapter may not respect pool options for search_path,
+    // so also pass schema directly to the adapter
+    const adapter = testSchema
+      ? new PrismaPg(pool, { schema: testSchema })
+      : new PrismaPg(pool)
     super({ adapter })
 
     this.pool = pool

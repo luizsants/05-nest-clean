@@ -6,7 +6,6 @@
 // - This avoids Prisma 7's pg.Pool caching issues with file-level schemas
 
 import { config } from 'dotenv'
-import { execSync } from 'child_process'
 import { Pool } from 'pg'
 import { randomUUID } from 'crypto'
 
@@ -24,8 +23,10 @@ const uniqueId = randomUUID().slice(0, 8)
 const SCHEMA_NAME = `test_w${workerId}_${uniqueId}`
 
 // Use PostgreSQL 'options' parameter to set search_path reliably
-// This works at protocol level, before any SQL runs
-const searchPathOption = encodeURIComponent(`-c search_path=${SCHEMA_NAME}`)
+// Include 'public' so enum types (e.g. "UserRole") resolve correctly
+const searchPathOption = encodeURIComponent(
+  `-c search_path=${SCHEMA_NAME},public`,
+)
 const SCHEMA_URL = `${baseUrl}?options=${searchPathOption}`
 
 // Set environment variables IMMEDIATELY (before any NestJS/Prisma imports)
@@ -40,6 +41,7 @@ let setupPool: Pool | null = null
 // Tables to truncate between test files (order matters for foreign keys)
 // Order: most dependent first, then base tables
 const TABLES_TO_TRUNCATE = [
+  'notifications', // depends on users
   'comments', // depends on questions, answers, users
   'attachments', // depends on questions, answers
   'answers', // depends on questions, users
@@ -56,11 +58,107 @@ async function ensureSchemaExists(): Promise<void> {
   await setupPool.query(`DROP SCHEMA IF EXISTS "${SCHEMA_NAME}" CASCADE`)
   await setupPool.query(`CREATE SCHEMA "${SCHEMA_NAME}"`)
 
-  // Use db push instead of migrate deploy (Prisma 7 syntax)
-  execSync('npx prisma db push --accept-data-loss', {
-    stdio: 'pipe',
-    env: { ...process.env, DATABASE_URL: SCHEMA_URL },
-  })
+  // 1. Clone enum types from public schema into test schema
+  const enums = await setupPool.query<{
+    typname: string
+    enumlabel: string
+  }>(`
+    SELECT t.typname, e.enumlabel
+    FROM pg_type t
+    JOIN pg_enum e ON t.oid = e.enumtypid
+    JOIN pg_namespace n ON t.typnamespace = n.oid
+    WHERE n.nspname = 'public'
+    ORDER BY t.typname, e.enumsortorder
+  `)
+
+  // Group labels by enum type name
+  const enumMap = new Map<string, string[]>()
+  for (const { typname, enumlabel } of enums.rows) {
+    if (!enumMap.has(typname)) enumMap.set(typname, [])
+    enumMap.get(typname)!.push(enumlabel)
+  }
+
+  for (const [typname, labels] of enumMap) {
+    const labelsSql = labels.map((l) => `'${l}'`).join(', ')
+    await setupPool.query(
+      `CREATE TYPE "${SCHEMA_NAME}"."${typname}" AS ENUM (${labelsSql})`,
+    )
+  }
+
+  // 2. Clone table structures from public schema
+  const tables = await setupPool.query<{ tablename: string }>(
+    `SELECT tablename FROM pg_tables 
+     WHERE schemaname = 'public' AND tablename != '_prisma_migrations'`,
+  )
+
+  for (const { tablename } of tables.rows) {
+    await setupPool.query(
+      `CREATE TABLE "${SCHEMA_NAME}"."${tablename}" 
+       (LIKE public."${tablename}" INCLUDING ALL)`,
+    )
+  }
+
+  // 3. Fix enum column types: change from public."EnumType" to test_schema."EnumType"
+  // Find all columns that use enum types from the public schema
+  const enumColumns = await setupPool.query<{
+    table_name: string
+    column_name: string
+    udt_name: string
+  }>(`
+    SELECT c.table_name, c.column_name, c.udt_name
+    FROM information_schema.columns c
+    JOIN pg_type t ON c.udt_name = t.typname
+    JOIN pg_namespace n ON t.typnamespace = n.oid
+    WHERE c.table_schema = '${SCHEMA_NAME}'
+      AND n.nspname = 'public'
+      AND t.typtype = 'e'
+  `)
+
+  for (const { table_name, column_name, udt_name } of enumColumns.rows) {
+    // Get current default value before altering type
+    const defaultRes = await setupPool.query<{ column_default: string | null }>(
+      `SELECT column_default FROM information_schema.columns
+       WHERE table_schema = '${SCHEMA_NAME}' 
+         AND table_name = '${table_name}' 
+         AND column_name = '${column_name}'`,
+    )
+    const currentDefault = defaultRes.rows[0]?.column_default
+
+    // Drop default first to avoid cast errors during type change
+    if (currentDefault) {
+      await setupPool.query(`
+        ALTER TABLE "${SCHEMA_NAME}"."${table_name}"
+        ALTER COLUMN "${column_name}" DROP DEFAULT
+      `)
+    }
+
+    await setupPool.query(`
+      ALTER TABLE "${SCHEMA_NAME}"."${table_name}"
+      ALTER COLUMN "${column_name}" 
+      TYPE "${SCHEMA_NAME}"."${udt_name}"
+      USING "${column_name}"::text::"${SCHEMA_NAME}"."${udt_name}"
+    `)
+
+    // Re-apply default with correct schema-qualified enum type
+    if (currentDefault) {
+      // Replace public."EnumType" with test_schema."EnumType" in default
+      const fixedDefault = currentDefault.replace(
+        /public\."([^"]+)"/g,
+        `"${SCHEMA_NAME}"."$1"`,
+      )
+      // Also handle unqualified enum references (just "EnumType")
+      const finalDefault = fixedDefault.includes(`"${SCHEMA_NAME}"`)
+        ? fixedDefault
+        : fixedDefault.replace(
+            `::"${udt_name}"`,
+            `::"${SCHEMA_NAME}"."${udt_name}"`,
+          )
+      await setupPool.query(`
+        ALTER TABLE "${SCHEMA_NAME}"."${table_name}"
+        ALTER COLUMN "${column_name}" SET DEFAULT ${finalDefault}
+      `)
+    }
+  }
 
   schemaReady = true
   // Note: Don't close setupPool here - we'll reuse it for truncation
@@ -75,7 +173,7 @@ async function truncateTables(): Promise<void> {
     // Use a single client from the pool to ensure search_path persists
     const client = await setupPool.connect()
     try {
-      await client.query(`SET search_path TO "${SCHEMA_NAME}"`)
+      await client.query(`SET search_path TO "${SCHEMA_NAME}", public`)
 
       // Check which tables actually exist before truncating
       const existingTables = await client.query<{ tablename: string }>(

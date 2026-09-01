@@ -32,7 +32,7 @@ describe('Authenticate Controller (e2e)', () => {
 
   test('[POST] /sessions - should authenticate successfully', async () => {
     const email = faker.internet.email()
-    const password = '123456'
+    const password = '12345678'
 
     await studentFactory.makePrismaStudent({
       email,

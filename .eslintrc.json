@@ -1,7 +1,7 @@
 {
   "extends": ["@rocketseat/eslint-config/node"],
   "parserOptions": {
-    "project": "./tsconfig.json"
+    "project": "./05-nest-clean/tsconfig.json"
   },
   "rules": {
     "no-console": "warn",

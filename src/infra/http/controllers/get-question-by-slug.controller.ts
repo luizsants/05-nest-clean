@@ -1,16 +1,12 @@
 import { BadRequestException, Controller, Get, Param } from '@nestjs/common'
-import { QuestionPresenter } from '../presenters/question-presenter'
 import { GetQuestionBySlugUseCase } from '@/domain/forum/application/use-cases/get-question-by-slug'
-import { PrismaService } from '@/infra/database/prisma/prisma.service'
+import { QuestionDetailsPresenter } from '../presenters/question-details-presenter'
 import { Public } from '@/infra/auth/public'
 
 @Controller('/questions/:slug')
 @Public()
 export class GetQuestionBySlugController {
-  constructor(
-    private getQuestionBySlug: GetQuestionBySlugUseCase,
-    private prisma: PrismaService,
-  ) {}
+  constructor(private getQuestionBySlug: GetQuestionBySlugUseCase) {}
 
   @Get()
   async handle(@Param('slug') slug: string) {
@@ -22,19 +18,6 @@ export class GetQuestionBySlugController {
       throw new BadRequestException()
     }
 
-    const question = result.value.question
-
-    const author = await this.prisma.user.findUnique({
-      where: { id: question.authorId.toString() },
-      select: { name: true },
-    })
-
-    return {
-      question: {
-        ...QuestionPresenter.toHTTP(question),
-        authorId: question.authorId.toString(),
-        authorName: author?.name ?? null,
-      },
-    }
+    return { question: QuestionDetailsPresenter.toHTTP(result.value.question) }
   }
 }
